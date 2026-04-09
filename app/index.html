@@ -10,37 +10,41 @@
     <div class="app-card">
         <header>
             <h1>My Savings</h1>
-            <p class="subtitle">Personal Finance Tracker</p>
+            <div class="goal-tag">Goal: <span id="goalValue">0</span> MAD</div>
         </header>
-
-        <div class="stats-container">
-            <div class="stat-box">
-                <span class="label">Total Saved</span>
-                <span id="displaySavings" class="value">0 MAD</span>
-            </div>
-            <div class="stat-box">
-                <span class="label">Remaining</span>
-                <span id="displayRemaining" class="value">0 MAD</span>
-            </div>
-        </div>
 
         <div class="progress-section">
             <div class="progress-bar-bg">
                 <div id="progressFill" class="progress-fill"></div>
             </div>
-            <span id="progressText">0%</span>
+            <div class="progress-labels">
+                <span id="progressText">0%</span>
+                <span id="displayRemaining">0 MAD left</span>
+            </div>
         </div>
 
-        <div class="input-area">
-            <div class="field">
-                <label>Savings Goal (MAD)</label>
-                <input type="number" id="goalInput" placeholder="e.g. 5000">
+        <div class="total-display">
+            <span class="label">Total Balance</span>
+            <h2 id="displaySavings">0 MAD</h2>
+        </div>
+
+        <div class="action-area">
+            <input type="number" id="amountInput" placeholder="Amount (MAD)">
+            <div class="btn-group">
+                <button onclick="modifySavings('add')" class="btn add-btn">+ Add</button>
+                <button onclick="modifySavings('sub')" class="btn sub-btn">- Minus</button>
             </div>
-            <div class="field">
-                <label>Current Amount (MAD)</label>
-                <input type="number" id="savingsInput" placeholder="e.g. 1200">
-            </div>
-            <button onclick="saveData()" class="save-btn">Update Progress</button>
+        </div>
+
+        <div class="settings-area">
+            <input type="number" id="goalInput" placeholder="Set New Goal">
+            <button onclick="updateGoal()" class="btn-small">Update Goal</button>
+        </div>
+
+        <div class="history">
+            <h3>Recent Activity</h3>
+            <ul id="historyList"></ul>
+            <button onclick="clearAll()" class="clear-btn">Reset All Data</button>
         </div>
     </div>
     <script src="script.js"></script>

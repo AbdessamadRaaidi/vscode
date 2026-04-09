@@ -1,49 +1,38 @@
 :root {
     --primary: #2563eb;
+    --success: #10b981;
+    --danger: #ef4444;
     --bg: #0f172a;
     --card: #1e293b;
     --text: #f8fafc;
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg);
-    color: var(--text);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-}
+body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+.app-card { background: var(--card); padding: 2rem; border-radius: 24px; width: 350px; border: 1px solid rgba(255, 255, 255, 0.1); }
 
-.app-card {
-    background: var(--card);
-    padding: 2.5rem;
-    border-radius: 24px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-    width: 100%;
-    max-width: 400px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
+h1 { margin: 0; font-size: 1.5rem; text-align: center; }
+.goal-tag { text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 5px; }
 
-header { text-align: center; margin-bottom: 2rem; }
-h1 { margin: 0; font-size: 1.8rem; letter-spacing: -1px; }
-.subtitle { color: #94a3b8; font-size: 0.9rem; margin-top: 5px; }
+.total-display { text-align: center; margin: 1.5rem 0; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 15px; }
+.total-display h2 { font-size: 2.2rem; margin: 0; color: #38bdf8; }
 
-.stats-container { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
-.stat-box { background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 15px; text-align: center; }
-.label { display: block; font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; }
-.value { font-weight: bold; font-size: 1.1rem; color: #38bdf8; }
+.progress-bar-bg { background: #334155; height: 12px; border-radius: 10px; overflow: hidden; }
+.progress-fill { background: linear-gradient(90deg, #38bdf8, #2563eb); height: 100%; width: 0%; transition: 0.5s; }
+.progress-labels { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 8px; color: #94a3b8; }
 
-.progress-section { margin-bottom: 2rem; text-align: right; }
-.progress-bar-bg { background: #334155; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
-.progress-fill { background: linear-gradient(90deg, #38bdf8, #2563eb); height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
-#progressText { font-size: 0.85rem; font-weight: 600; color: #38bdf8; }
+.action-area { margin-top: 1.5rem; }
+input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; box-sizing: border-box; }
 
-.field { margin-bottom: 1.2rem; }
-label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: #cbd5e1; }
-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; box-sizing: border-box; }
-input:focus { border-color: var(--primary); }
+.btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn { border: none; padding: 12px; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
+.add-btn { background: var(--success); }
+.sub-btn { background: var(--danger); }
 
-.save-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
-.save-btn:hover { background: #1d4ed8; transform: translateY(-2px); }
+.settings-area { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #334155; display: flex; gap: 5px; }
+.btn-small { background: #475569; border: none; color: white; padding: 0 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+
+.history { margin-top: 1.5rem; }
+.history h3 { font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px; }
+ul { list-style: none; padding: 0; max-height: 100px; overflow-y: auto; font-size: 0.85rem; }
+li { padding: 5px 0; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; }
+.clear-btn { background: none; border: none; color: #64748b; font-size: 0.7rem; cursor: pointer; margin-top: 10px; text-decoration: underline; }
