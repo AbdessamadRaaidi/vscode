@@ -61,3 +61,39 @@ li {
     display: flex;
     flex-direction: column;
 }
+#undoToast {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: #334155;
+    color: #fff;
+    text-align: center;
+    border-radius: 12px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
+#undoToast.show {
+    visibility: visible;
+    animation: fadein 0.5s;
+}
+
+#undoToast button {
+    background: #38bdf8;
+    border: none;
+    color: #0f172a;
+    margin-left: 15px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
