@@ -68,6 +68,7 @@ function saveData() {
     localStorage.setItem("savings_history", JSON.stringify(history));
 }
 
+// Replace your updateUI function with this one
 function updateUI() {
     document.getElementById("displaySavings").innerText = `${total.toLocaleString()} MAD`;
     document.getElementById("goalValue").innerText = goal.toLocaleString();
@@ -80,13 +81,33 @@ function updateUI() {
     document.getElementById("progressText").innerText = `${Math.round(percent)}%`;
 
     const historyList = document.getElementById("historyList");
-    // Updated HTML generation to show the date
-    historyList.innerHTML = history.map(item => `
+    
+    historyList.innerHTML = history.map((item, index) => `
         <li>
-            <span>${item.text}</span>
-            <span style="font-size: 0.7rem; color: #64748b;">${item.date}</span>
+            <div class="history-item-left">
+                <span>${item.text}</span>
+                <span style="font-size: 0.7rem; color: #64748b;">${item.date}</span>
+            </div>
+            <button class="delete-btn" onclick="deleteTransaction(${index})">×</button>
         </li>
     `).join("");
+}
+
+// Add this new function to handle deleting
+function deleteTransaction(index) {
+    const item = history[index];
+    
+    // Reverse the math
+    const amount = parseFloat(item.text.replace(/[^-0.9.]/g, ''));
+    
+    // If it was +100, we subtract 100. If it was -100, we add 100.
+    total -= amount;
+
+    // Remove from history array
+    history.splice(index, 1);
+
+    saveData();
+    updateUI();
 }
 
 function clearAll() {
