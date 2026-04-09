@@ -1,1 +1,2 @@
-(lambda n: [print(f"le factoriel de {n} est {1 if n==0 else n*lambda(n-1)}")"])(int(input("entrer un nombre:")))
+(lambda n: [print(f"le factoriel de {n} est {1 if n==0 else n*lambda(n-1)}")])(int(input("entrer un nombre:")))
+(lambda f: (lambda n: f(f, n))(int(input("Entrez un nombre : "))))(lambda self, n: print(f"Le factoriel de {n} est {1 if n == 0 else n * self(self, n - 1)}"))

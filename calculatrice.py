@@ -13,15 +13,15 @@ print("1.Add")
 print("2.Subtract")
 print("3.Multiply")
 print("4.Divide")
-choice = input("Enter choice(1/2/3/4): ")
-num1 = float(input("Enter first number: "))
-num2 = float(input("Enter second number: "))
-if choice == '1':
-    print(f"{num1} + {num2} = {add(num1, num2)}")
-elif choice == '2':
-    print(f"{num1} - {num2} = {subtract(num1, num2)}")
-elif choice == '3':
-    print(f"{num1} * {num2} = {multiply(num1, num2)}")
-elif choice == '4':
-    print(f"{num1} / {num2} = {divide(num1, num2)}")
+c = input("Entrer choix(1/2/3/4): ")
+n= float(input("Entrer nombre 1: "))
+m = float(input("Entrer nombre 2: "))
+if c == '1':
+    print(f"{n} + {m} = {add(n, m)}")
+elif c == '2':
+    print(f"{n} - {m} = {subtract(n, m)}")
+elif c == '3':
+    print(f"{n} * {m} = {multiply(n, m)}")
+elif c == '4':
+    print(f"{n} / {m} = {divide(n, m)}")
 else:    print("Invalid input")
