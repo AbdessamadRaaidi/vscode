@@ -3,31 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Savings Tracker</title>
+    <title>Savings Tracker MAD</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Savings Tracker</h1>
-        
-        <div class="input-group">
-            <label>Savings Goal ($):</label>
-            <input type="number" id="goalInput" placeholder="Enter goal...">
-        </div>
+    <div class="app-card">
+        <header>
+            <h1>My Savings</h1>
+            <p class="subtitle">Personal Finance Tracker</p>
+        </header>
 
-        <div class="input-group">
-            <label>Current Savings ($):</label>
-            <input type="number" id="savingsInput" placeholder="Enter current amount...">
-        </div>
-
-        <button onclick="saveData()">Save Progress</button>
-
-        <div class="display">
-            <p>Total Saved: <span id="displaySavings">$0</span></p>
-            <p>Remaining: <span id="displayRemaining">$0</span></p>
-            <div class="progress-bar">
-                <div id="progressFill"></div>
+        <div class="stats-container">
+            <div class="stat-box">
+                <span class="label">Total Saved</span>
+                <span id="displaySavings" class="value">0 MAD</span>
             </div>
+            <div class="stat-box">
+                <span class="label">Remaining</span>
+                <span id="displayRemaining" class="value">0 MAD</span>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-bar-bg">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <span id="progressText">0%</span>
+        </div>
+
+        <div class="input-area">
+            <div class="field">
+                <label>Savings Goal (MAD)</label>
+                <input type="number" id="goalInput" placeholder="e.g. 5000">
+            </div>
+            <div class="field">
+                <label>Current Amount (MAD)</label>
+                <input type="number" id="savingsInput" placeholder="e.g. 1200">
+            </div>
+            <button onclick="saveData()" class="save-btn">Update Progress</button>
         </div>
     </div>
     <script src="script.js"></script>
