@@ -1,0 +1,1 @@
+(lambda n: [print(f"le factoriel de {n} est {1 if n==0 else n*lambda(n-1)}")"])(int(input("entrer un nombre:")))
