@@ -108,3 +108,40 @@ function hideUndoNotification() {
 }
 
 function clearAll() { if (confirm("Delete all data?")) { localStorage.clear(); location.reload(); } }
+document.addEventListener('mousemove', (e) => {
+    // Select all buttons you want to react
+    const buttons = document.querySelectorAll('.btn, .add-btn, .sub-btn, .btn-small');
+    
+    buttons.forEach(btn => {
+        const rect = btn.getBoundingClientRect();
+        
+        // Find the center point of the button
+        const btnX = rect.left + rect.width / 2;
+        const btnY = rect.top + rect.height / 2;
+        
+        // Calculate distance between mouse and button center
+        const distance = Math.sqrt(
+            Math.pow(e.clientX - btnX, 2) + Math.pow(e.clientY - btnY, 2)
+        );
+
+        // Settings
+        const proximityLimit = 150; // Distance in pixels where it starts growing
+        
+        if (distance < proximityLimit) {
+            // Calculate scale: closer = bigger (max scale 1.15)
+            const scale = 1 + (0.15 * (1 - distance / proximityLimit));
+            btn.style.transform = `scale(${scale})`;
+            
+            // Add jiggle if very close
+            if (distance < 50) {
+                btn.classList.add('jiggle-active');
+            } else {
+                btn.classList.remove('jiggle-active');
+            }
+        } else {
+            // Reset if mouse is far away
+            btn.style.transform = `scale(1)`;
+            btn.classList.remove('jiggle-active');
+        }
+    });
+});
