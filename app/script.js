@@ -109,39 +109,50 @@ function hideUndoNotification() {
 
 function clearAll() { if (confirm("Delete all data?")) { localStorage.clear(); location.reload(); } }
 document.addEventListener('mousemove', (e) => {
-    // Select all buttons you want to react
-    const buttons = document.querySelectorAll('.btn, .add-btn, .sub-btn, .btn-small');
+    const buttons = document.querySelectorAll('.add-btn, .sub-btn, .btn-small');
     
     buttons.forEach(btn => {
         const rect = btn.getBoundingClientRect();
-        
-        // Find the center point of the button
         const btnX = rect.left + rect.width / 2;
         const btnY = rect.top + rect.height / 2;
         
-        // Calculate distance between mouse and button center
-        const distance = Math.sqrt(
-            Math.pow(e.clientX - btnX, 2) + Math.pow(e.clientY - btnY, 2)
-        );
+        const distance = Math.sqrt(Math.pow(e.clientX - btnX, 2) + Math.pow(e.clientY - btnY, 2));
+        const limit = 200; // Starts reacting at 200px
 
-        // Settings
-        const proximityLimit = 150; // Distance in pixels where it starts growing
-        
-        if (distance < proximityLimit) {
-            // Calculate scale: closer = bigger (max scale 1.15)
-            const scale = 1 + (0.15 * (1 - distance / proximityLimit));
+        if (distance < limit) {
+            // Calculate a 0 to 1 value based on closeness
+            const intensity = 1 - (distance / limit); 
+            
+            // 1. Soft Scaling (Max 1.1)
+            const scale = 1 + (0.1 * intensity);
+            
+            // 2. Color Shift & Glow
+            if (btn.classList.contains('add-btn')) {
+                // Fades from dark green to bright emerald
+                btn.style.backgroundColor = `rgb(${6 + (10 * intensity)}, ${95 + (90 * intensity)}, ${70 + (40 * intensity)})`;
+                btn.style.boxShadow = `0 0 ${20 * intensity}px rgba(16, 185, 129, ${intensity})`;
+            } else if (btn.classList.contains('sub-btn')) {
+                // Fades from dark red to bright scarlet
+                btn.style.backgroundColor = `rgb(${153 + (80 * intensity)}, ${27 + (40 * intensity)}, ${27 + (40 * intensity)})`;
+                btn.style.boxShadow = `0 0 ${20 * intensity}px rgba(239, 68, 68, ${intensity})`;
+            }
+
             btn.style.transform = `scale(${scale})`;
             
-            // Add jiggle if very close
-            if (distance < 50) {
-                btn.classList.add('jiggle-active');
+            // 3. Trigger soft float when very close
+            if (intensity > 0.8) {
+                btn.classList.add('float-active');
             } else {
-                btn.classList.remove('jiggle-active');
+                btn.classList.remove('float-active');
             }
         } else {
-            // Reset if mouse is far away
+            // Reset to defaults
             btn.style.transform = `scale(1)`;
-            btn.classList.remove('jiggle-active');
+            btn.style.boxShadow = `none`;
+            btn.classList.remove('float-active');
+            // Reset colors
+            if (btn.classList.contains('add-btn')) btn.style.backgroundColor = "";
+            if (btn.classList.contains('sub-btn')) btn.style.backgroundColor = "";
         }
     });
 });
