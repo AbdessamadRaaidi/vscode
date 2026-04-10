@@ -111,48 +111,48 @@ function clearAll() { if (confirm("Delete all data?")) { localStorage.clear(); l
 document.addEventListener('mousemove', (e) => {
     const buttons = document.querySelectorAll('.add-btn, .sub-btn, .btn-small');
     
+    // 1. Find the "Active" button (the one closest to the mouse)
+    let closestBtn = null;
+    let minDistance = 200; // Only focus if within 200px
+
     buttons.forEach(btn => {
         const rect = btn.getBoundingClientRect();
         const btnX = rect.left + rect.width / 2;
         const btnY = rect.top + rect.height / 2;
-        
         const distance = Math.sqrt(Math.pow(e.clientX - btnX, 2) + Math.pow(e.clientY - btnY, 2));
-        const limit = 200; // Starts reacting at 200px
 
-        if (distance < limit) {
-            // Calculate a 0 to 1 value based on closeness
-            const intensity = 1 - (distance / limit); 
-            
-            // 1. Soft Scaling (Max 1.1)
-            const scale = 1 + (0.1 * intensity);
-            
-            // 2. Color Shift & Glow
-            if (btn.classList.contains('add-btn')) {
-                // Fades from dark green to bright emerald
-                btn.style.backgroundColor = `rgb(${6 + (10 * intensity)}, ${95 + (90 * intensity)}, ${70 + (40 * intensity)})`;
-                btn.style.boxShadow = `0 0 ${20 * intensity}px rgba(16, 185, 129, ${intensity})`;
-            } else if (btn.classList.contains('sub-btn')) {
-                // Fades from dark red to bright scarlet
-                btn.style.backgroundColor = `rgb(${153 + (80 * intensity)}, ${27 + (40 * intensity)}, ${27 + (40 * intensity)})`;
-                btn.style.boxShadow = `0 0 ${20 * intensity}px rgba(239, 68, 68, ${intensity})`;
-            }
-
-            btn.style.transform = `scale(${scale})`;
-            
-            // 3. Trigger soft float when very close
-            if (intensity > 0.8) {
-                btn.classList.add('float-active');
-            } else {
-                btn.classList.remove('float-active');
-            }
-        } else {
-            // Reset to defaults
-            btn.style.transform = `scale(1)`;
-            btn.style.boxShadow = `none`;
-            btn.classList.remove('float-active');
-            // Reset colors
-            if (btn.classList.contains('add-btn')) btn.style.backgroundColor = "";
-            if (btn.classList.contains('sub-btn')) btn.style.backgroundColor = "";
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestBtn = btn;
         }
+        
+        // Reset every button FIRST to prevent the "stuck bright" bug
+        btn.style.transform = `scale(1)`;
+        btn.style.boxShadow = `none`;
+        btn.style.backgroundColor = "";
+        btn.classList.remove('float-active');
     });
+
+    // 2. Only apply effects to the single closest button
+    if (closestBtn) {
+        const intensity = 1 - (minDistance / 200);
+        const scale = 1 + (0.12 * intensity);
+        
+        closestBtn.style.transform = `scale(${scale})`;
+
+        if (closestBtn.classList.contains('add-btn')) {
+            // Smooth Green Glow
+            closestBtn.style.backgroundColor = `rgb(${16 + (40 * intensity)}, ${185 * intensity + 50}, ${129 * intensity + 50})`;
+            closestBtn.style.boxShadow = `0 10px 20px rgba(16, 185, 129, ${0.4 * intensity})`;
+        } else if (closestBtn.classList.contains('sub-btn')) {
+            // Smooth Red Glow
+            closestBtn.style.backgroundColor = `rgb(${239 * intensity + 50}, ${68 * intensity}, ${68 * intensity})`;
+            closestBtn.style.boxShadow = `0 10px 20px rgba(239, 68, 68, ${0.4 * intensity})`;
+        }
+
+        // Only float if really close
+        if (intensity > 0.85) {
+            closestBtn.classList.add('float-active');
+        }
+    }
 });
