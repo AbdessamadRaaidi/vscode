@@ -1,11 +1,14 @@
 let total = parseFloat(localStorage.getItem("savings_total")) || 0;
 let goal = parseFloat(localStorage.getItem("savings_goal")) || 0;
 let history = JSON.parse(localStorage.getItem("savings_history")) || [];
-let lastDeleted = null; // To store the item for Undo
+let lastDeleted = null;
 
 window.onload = () => {
-    // Migration check for old data formats
-    history = history.map(item => typeof item === 'string' ? { text: item, date: new Date().toLocaleDateString('fr-MA'), val: parseFloat(item.replace(/[^-0.9.]/g, '')) } : item);
+    history = history.map(item => typeof item === 'string' ? { 
+        text: item, 
+        date: new Date().toLocaleDateString('fr-MA'), 
+        val: parseFloat(item.replace(/[^-0.9.]/g, '')) 
+    } : item);
     updateUI();
 };
 
@@ -17,12 +20,20 @@ function modifySavings(type) {
     const change = type === 'add' ? amount : -amount;
     total += change;
     
+    // 1. Trigger Background Glow
+    triggerBackgroundEffect(type);
+
+    // 2. Trigger Soft Button Kick
+    const btn = type === 'add' ? document.querySelector('.add-btn') : document.querySelector('.sub-btn');
+    btn.classList.add('btn-active-press');
+    setTimeout(() => btn.classList.remove('btn-active-press'), 200);
+
     const now = new Date();
     const dateStr = now.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
     history.unshift({
         text: `${type === 'add' ? '+' : '-'} ${amount} MAD`,
-        val: change, // Store the raw number for easy math later
+        val: change,
         date: dateStr
     });
 
@@ -32,13 +43,16 @@ function modifySavings(type) {
     updateUI();
 }
 
+function triggerBackgroundEffect(type) {
+    const overlay = document.getElementById("bg-overlay");
+    if (!overlay) return;
+    overlay.className = type === 'add' ? 'burst-add' : 'burst-sub';
+    setTimeout(() => { overlay.className = ''; }, 700);
+}
+
 function deleteTransaction(index) {
-    // Save for Undo feature
     lastDeleted = { item: history[index], index: index };
-    
-    // Update Total: Subtract the value (Subtracting a negative adds it back)
     total -= history[index].val;
-    
     history.splice(index, 1);
     saveData();
     updateUI();
@@ -47,10 +61,8 @@ function deleteTransaction(index) {
 
 function undoDelete() {
     if (!lastDeleted) return;
-    
-    total += lastDeleted.item.val; // Put the money back
-    history.splice(lastDeleted.index, 0, lastDeleted.item); // Put the item back
-    
+    total += lastDeleted.item.val;
+    history.splice(lastDeleted.index, 0, lastDeleted.item);
     lastDeleted = null;
     hideUndoNotification();
     saveData();
@@ -89,7 +101,6 @@ function saveData() {
     localStorage.setItem("savings_history", JSON.stringify(history));
 }
 
-// Undo Notification Logic
 function showUndoNotification() {
     let el = document.getElementById("undoToast");
     if(!el) {
@@ -108,11 +119,12 @@ function hideUndoNotification() {
 }
 
 function clearAll() { if (confirm("Delete all data?")) { localStorage.clear(); location.reload(); } }
+
+// --- SOFT LAYERED MOUSE LOGIC ---
 document.addEventListener('mousemove', (e) => {
     const buttons = document.querySelectorAll('.add-btn, .sub-btn, .btn-small');
-    
     let closestBtn = null;
-    let minDistance = 250; 
+    let minDistance = 200; 
 
     buttons.forEach(btn => {
         const rect = btn.getBoundingClientRect();
@@ -120,11 +132,7 @@ document.addEventListener('mousemove', (e) => {
         const btnY = rect.top + rect.height / 2;
         const distance = Math.sqrt(Math.pow(e.clientX - btnX, 2) + Math.pow(e.clientY - btnY, 2));
 
-        // Reset everything first
         btn.style.transform = `scale(1)`;
-        btn.style.boxShadow = `none`;
-        btn.classList.remove('jiggle-on-hover');
-
         if (distance < minDistance) {
             minDistance = distance;
             closestBtn = btn;
@@ -132,23 +140,7 @@ document.addEventListener('mousemove', (e) => {
     });
 
     if (closestBtn) {
-        const intensity = 1 - (minDistance / 250);
-        const scale = 1 + (0.15 * intensity);
-        
-        // 1. Growth & Glow
-        closestBtn.style.transform = `scale(${scale})`;
-        
-        if (closestBtn.classList.contains('add-btn')) {
-            closestBtn.style.boxShadow = `0 10px 20px rgba(16, 185, 129, ${0.5 * intensity})`;
-        } else {
-            closestBtn.style.boxShadow = `0 10px 20px rgba(239, 68, 68, ${0.5 * intensity})`;
-        }
-
-        // 2. The Jiggle: Only if the mouse is physically over the button
-        const rect = closestBtn.getBoundingClientRect();
-        if (e.clientX >= rect.left && e.clientX <= rect.right &&
-            e.clientY >= rect.top && e.clientY <= rect.bottom) {
-            closestBtn.classList.add('jiggle-on-hover');
-        }
+        const intensity = 1 - (minDistance / 200);
+        closestBtn.style.transform = `scale(${1 + (0.1 * intensity)})`;
     }
 });

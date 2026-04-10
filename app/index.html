@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="bg-overlay"></div>
+
     <div class="app-card">
         <header>
             <h1>My Savings</h1>
@@ -31,14 +33,14 @@
         <div class="action-area">
             <input type="number" id="amountInput" placeholder="Amount (MAD)">
             <div class="btn-group">
-                <button onclick="modifySavings('add')" class="btn add-btn">+ Add</button>
-                <button onclick="modifySavings('sub')" class="btn sub-btn">- Minus</button>
+                <button onclick="modifySavings('add')" class="add-btn">+ Add</button>
+                <button onclick="modifySavings('sub')" class="sub-btn">- Minus</button>
             </div>
         </div>
 
         <div class="settings-area">
             <input type="number" id="goalInput" placeholder="Set New Goal">
-            <button onclick="updateGoal()" class="btn-small">Update Goal</button>
+            <button onclick="updateGoal()" class="btn-small">Set Goal</button>
         </div>
 
         <div class="history">
@@ -47,6 +49,7 @@
             <button onclick="clearAll()" class="clear-btn">Reset All Data</button>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>

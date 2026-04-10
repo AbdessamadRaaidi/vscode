@@ -7,121 +7,122 @@
     --text: #f8fafc;
 }
 
-body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-.app-card { background: var(--card); padding: 2rem; border-radius: 24px; width: 350px; border: 1px solid rgba(255, 255, 255, 0.1); }
+body { 
+    font-family: 'Segoe UI', sans-serif; 
+    background: var(--bg); 
+    color: var(--text); 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    min-height: 100vh; 
+    margin: 0; 
+    overflow: hidden; /* Prevents scrollbars during big animations */
+}
+
+/* --- New Background Burst Layers --- */
+#bg-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0;
+}
+
+.burst-add { 
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+    animation: burstFade 0.7s ease-out;
+}
+
+.burst-sub { 
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+    animation: burstFade 0.7s ease-out;
+}
+
+@keyframes burstFade {
+    0% { opacity: 0; transform: scale(0.6); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.4); }
+}
+
+/* --- App Layout --- */
+.app-card { 
+    background: var(--card); 
+    padding: 2rem; 
+    border-radius: 24px; 
+    width: 350px; 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    position: relative;
+    z-index: 10;
+}
 
 h1 { margin: 0; font-size: 1.5rem; text-align: center; }
-.goal-tag { text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 5px; }
-
 .total-display { text-align: center; margin: 1.5rem 0; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 15px; }
 .total-display h2 { font-size: 2.2rem; margin: 0; color: #38bdf8; }
 
+/* --- Progress Bar --- */
 .progress-bar-bg { background: #334155; height: 12px; border-radius: 10px; overflow: hidden; }
 .progress-fill { background: linear-gradient(90deg, #38bdf8, #2563eb); height: 100%; width: 0%; transition: 0.5s; }
-.progress-labels { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 8px; color: #94a3b8; }
 
-.action-area { margin-top: 1.5rem; }
-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; box-sizing: border-box; }
-
-.btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.btn { border: none; padding: 12px; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
-.add-btn { background: var(--success); }
-.sub-btn { background: var(--danger); }
-
-.settings-area { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #334155; display: flex; gap: 5px; }
-.btn-small { background: #475569; border: none; color: white; padding: 0 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
-
-.history { margin-top: 1.5rem; }
-.history h3 { font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px; }
-ul { list-style: none; padding: 0; max-height: 100px; overflow-y: auto; font-size: 0.85rem; }
-li { padding: 5px 0; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; }
-.clear-btn { background: none; border: none; color: #64748b; font-size: 0.7rem; cursor: pointer; margin-top: 10px; text-decoration: underline; }
-.delete-btn {
-    background: none;
-    border: none;
-    color: #ef4444;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-    margin-left: 10px;
-    padding: 0 5px;
-    transition: transform 0.2s;
+/* --- Inputs & Buttons --- */
+input { 
+    width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; 
+    background: #0f172a; color: white; margin-bottom: 10px; box-sizing: border-box; 
 }
 
-.delete-btn:hover {
-    transform: scale(1.3);
-}
-
-li {
-    justify-content: space-between;
-    align-items: center; /* Keeps text and button aligned */
-}
-
-.history-item-left {
-    display: flex;
-    flex-direction: column;
-}
-#undoToast {
-    visibility: hidden;
-    min-width: 250px;
-    background-color: #334155;
-    color: #fff;
-    text-align: center;
-    border-radius: 12px;
-    padding: 16px;
-    position: fixed;
-    z-index: 1;
-    left: 50%;
-    bottom: 30px;
-    transform: translateX(-50%);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-}
-
-#undoToast.show {
-    visibility: visible;
-    animation: fadein 0.5s;
-}
-
-#undoToast button {
-    background: #38bdf8;
-    border: none;
-    color: #0f172a;
-    margin-left: 15px;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-/* 1. Fix Button Sizes */
-.btn-group {
-    display: flex;
-    gap: 15px;
-    margin-top: 15px;
-}
+.btn-group { display: flex; gap: 15px; margin-top: 15px; }
 
 .add-btn, .sub-btn {
-    flex: 1; /* Makes them equal width */
-    min-height: 50px; /* Ensures they aren't small */
+    flex: 1;
+    min-height: 50px;
     font-size: 1rem;
     border-radius: 12px;
     cursor: pointer;
     border: none;
     color: white;
     font-weight: bold;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-                background-color 0.3s ease;
+    /* Soft hover transition */
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s;
 }
 
-/* 2. The Jiggle (High frequency but small movement) */
-@keyframes intenseJiggle {
-    0% { transform: scale(1.1) rotate(0deg); }
-    25% { transform: scale(1.1) rotate(1deg); }
-    50% { transform: scale(1.1) rotate(-1deg); }
-    75% { transform: scale(1.1) rotate(1deg); }
-    100% { transform: scale(1.1) rotate(0deg); }
+.add-btn { background: var(--success); }
+.sub-btn { background: var(--danger); }
+
+/* --- Soft Click Animation (The Kick) --- */
+.btn-active-press {
+    animation: kick 0.15s ease-out;
 }
 
-.jiggle-on-hover {
-    animation: intenseJiggle 0.15s infinite; /* Fast jiggle when mouse is ON it */
+@keyframes kick {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.92); }
+    100% { transform: scale(1.08); }
 }
+
+/* --- History Section --- */
+ul { list-style: none; padding: 0; max-height: 150px; overflow-y: auto; font-size: 0.85rem; }
+li { 
+    padding: 8px 0; border-bottom: 1px solid #334155; 
+    display: flex; justify-content: space-between; align-items: center; 
+}
+
+.history-item-left { display: flex; flex-direction: column; }
+
+.delete-btn {
+    background: none; border: none; color: #ef4444;
+    cursor: pointer; font-size: 1.1rem; font-weight: bold;
+    transition: transform 0.2s;
+}
+.delete-btn:hover { transform: scale(1.3); }
+
+/* --- Toast Notification --- */
+#undoToast {
+    visibility: hidden; min-width: 250px; background-color: #334155;
+    color: #fff; text-align: center; border-radius: 12px; padding: 16px;
+    position: fixed; z-index: 100; left: 50%; bottom: 30px;
+    transform: translateX(-50%); box-shadow: 0 10px 15px rgba(0,0,0,0.4);
+}
+#undoToast.show { visibility: visible; animation: fadein 0.5s; }
+@keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
