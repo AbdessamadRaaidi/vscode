@@ -22,7 +22,7 @@
             </div>
             <div class="progress-labels">
                 <span id="progressText">0%</span>
-                <span id="displayRemaining">0 MAD left</span>
+                <span id="daysLeft">No deadline set</span>
             </div>
         </div>
 
@@ -45,8 +45,9 @@
 
         <div class="settings-area">
             <div class="goal-input-group">
-                <input type="number" id="goalInput" placeholder="Set Goal">
-                <button onclick="updateGoal()" class="goal-btn">Set</button>
+                <input type="number" id="goalInput" placeholder="Goal">
+                <input type="date" id="deadlineInput">
+                <button onclick="updateSettings()" class="goal-btn">Set</button>
             </div>
         </div>
 

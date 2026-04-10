@@ -1,5 +1,6 @@
 let total = parseFloat(localStorage.getItem("savings_total")) || 0;
 let goal = parseFloat(localStorage.getItem("savings_goal")) || 0;
+let deadline = localStorage.getItem("savings_deadline") || "";
 let history = JSON.parse(localStorage.getItem("savings_history")) || [];
 let lastDeleted = null;
 let savingsChart;
@@ -8,6 +9,7 @@ window.onload = () => {
     history = history.map(item => typeof item === 'string' ? { 
         text: item, date: new Date().toLocaleDateString('fr-MA'), val: parseFloat(item.replace(/[^-0.9.]/g, '')) 
     } : item);
+    document.getElementById("deadlineInput").value = deadline;
     initChart();
     updateUI();
 };
@@ -18,29 +20,42 @@ function initChart() {
         type: 'line',
         data: {
             labels: [],
-            datasets: [{
-                data: [],
-                borderColor: '#38bdf8',
-                backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointBackgroundColor: '#38bdf8'
-            }]
+            datasets: [
+                {
+                    label: 'Actual',
+                    data: [],
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#38bdf8',
+                    zIndex: 2
+                },
+                {
+                    label: 'Projection',
+                    data: [],
+                    borderColor: 'rgba(148, 163, 184, 0.3)', // Lower transparency
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
+                    zIndex: 1
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { 
-                legend: { display: false },
-                tooltip: { enabled: true, callbacks: { label: (c) => c.parsed.y + ' MAD' } }
-            },
+            plugins: { legend: { display: false } },
             scales: {
-                x: { display: false },
+                x: { 
+                    ticks: { color: '#64748b', font: { size: 8 }, maxRotation: 45, minRotation: 45 }
+                },
                 y: { 
                     beginAtZero: true,
-                    max: goal > 0 ? goal : undefined,
+                    max: goal > 0 ? goal * 1.1 : undefined,
                     grid: { color: 'rgba(255,255,255,0.05)' },
                     ticks: { color: '#64748b', font: { size: 9 } }
                 }
@@ -51,17 +66,43 @@ function initChart() {
 
 function updateChart() {
     if (!savingsChart) return;
+
+    let chartLabels = [];
+    let actualData = [];
+    let projectionData = [];
+
+    // 1. Calculate History
     let runningTotal = total;
-    let chartData = [total];
-    let chartLabels = ["Now"];
+    let histPoints = [{date: "Today", val: total}];
     history.forEach(item => {
         runningTotal -= item.val;
-        chartData.unshift(runningTotal);
-        chartLabels.unshift(item.date);
+        histPoints.unshift({date: item.date.split(' ')[0], val: runningTotal});
     });
+
+    // 2. Projection Logic
+    const now = new Date();
+    const targetDate = deadline ? new Date(deadline) : null;
+    
+    histPoints.forEach(p => {
+        chartLabels.push(p.date);
+        actualData.push(p.val);
+        projectionData.push(null);
+    });
+
+    if (targetDate && targetDate > now) {
+        const daysToGoal = Math.ceil((targetDate - now) / (1000 * 60 * 60 * 24));
+        projectionData[projectionData.length - 1] = total; // Start projection at current total
+        
+        // Add one point for the end date
+        chartLabels.push(targetDate.toLocaleDateString('fr-MA', {day:'2-digit', month:'2-digit'}));
+        actualData.push(null);
+        projectionData.push(goal);
+    }
+
     savingsChart.data.labels = chartLabels;
-    savingsChart.data.datasets[0].data = chartData;
-    savingsChart.options.scales.y.max = goal > 0 ? goal : undefined;
+    savingsChart.data.datasets[0].data = actualData;
+    savingsChart.data.datasets[1].data = projectionData;
+    savingsChart.options.scales.y.max = goal > 0 ? goal * 1.1 : undefined;
     savingsChart.update();
 }
 
@@ -73,16 +114,16 @@ function modifySavings(type) {
     const change = type === 'add' ? amount : -amount;
     total += change;
     triggerBackgroundEffect(type);
-
+    
     const btn = document.querySelector(`.${type}-btn`);
     btn.classList.add('btn-active-press');
     setTimeout(() => btn.classList.remove('btn-active-press'), 200);
 
     const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const dateStr = now.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' });
 
     history.unshift({ text: `${type === 'add' ? '+' : '-'} ${amount} MAD`, val: change, date: dateStr });
-    if (history.length > 15) history.pop();
+    if (history.length > 20) history.pop();
     input.value = "";
     saveData();
     updateUI();
@@ -116,52 +157,51 @@ function undoDelete() {
 function updateUI() {
     document.getElementById("displaySavings").innerText = `${total.toLocaleString()} MAD`;
     document.getElementById("goalValue").innerText = goal.toLocaleString();
+    
+    // Progress Calculation
     const remaining = goal - total;
-    document.getElementById("displayRemaining").innerText = `${(remaining > 0 ? remaining : 0).toLocaleString()} MAD left`;
     const percent = goal > 0 ? (total / goal) * 100 : 0;
     document.getElementById("progressFill").style.width = `${Math.min(percent, 100)}%`;
     document.getElementById("progressText").innerText = `${Math.round(percent)}%`;
 
+    // Deadline Calculation
+    if (deadline) {
+        const days = Math.ceil((new Date(deadline) - new Date()) / (1000 * 60 * 60 * 24));
+        document.getElementById("daysLeft").innerText = days > 0 ? `${days} days left` : "Deadline passed";
+    }
+
     document.getElementById("historyList").innerHTML = history.map((item, i) => `
         <li>
-            <div class="history-item-left">
-                <span>${item.text}</span>
-                <span style="font-size: 0.7rem; color: #64748b;">${item.date}</span>
-            </div>
+            <span>${item.text} <small style="color:#64748b">(${item.date})</small></span>
             <button class="delete-btn" onclick="deleteTransaction(${i})">×</button>
         </li>
     `).join("");
     updateChart();
 }
 
-function updateGoal() {
-    const goalVal = parseFloat(document.getElementById("goalInput").value);
-    if (!isNaN(goalVal)) { goal = goalVal; saveData(); updateUI(); document.getElementById("goalInput").value = ""; }
+function updateSettings() {
+    const g = parseFloat(document.getElementById("goalInput").value);
+    const d = document.getElementById("deadlineInput").value;
+    if (!isNaN(g)) goal = g;
+    deadline = d;
+    saveData();
+    updateUI();
 }
 
 function saveData() {
     localStorage.setItem("savings_total", total);
     localStorage.setItem("savings_goal", goal);
+    localStorage.setItem("savings_deadline", deadline);
     localStorage.setItem("savings_history", JSON.stringify(history));
 }
 
 function showUndoNotification() {
     let el = document.getElementById("undoToast") || document.createElement("div");
     el.id = "undoToast"; document.body.appendChild(el);
-    el.innerHTML = `Deleted. <button onclick="undoDelete()" style="background:#38bdf8;border:none;padding:5px;border-radius:5px;cursor:pointer;font-weight:bold">Undo</button>`;
+    el.innerHTML = `Deleted. <button onclick="undoDelete()" style="color:#38bdf8;background:none;border:none;cursor:pointer;font-weight:bold">Undo</button>`;
     el.className = "show";
-    setTimeout(() => { if(el.className === "show") el.className = ""; }, 5000);
+    setTimeout(() => el.className = "", 4000);
 }
 
 function hideUndoNotification() { document.getElementById("undoToast").className = ""; }
 function clearAll() { if (confirm("Clear all?")) { localStorage.clear(); location.reload(); } }
-
-document.addEventListener('mousemove', (e) => {
-    const buttons = document.querySelectorAll('.add-btn, .sub-btn, .goal-btn');
-    buttons.forEach(btn => {
-        const rect = btn.getBoundingClientRect();
-        const distance = Math.sqrt(Math.pow(e.clientX - (rect.left + rect.width / 2), 2) + Math.pow(e.clientY - (rect.top + rect.height / 2), 2));
-        const intensity = Math.max(0, 1 - (distance / 200));
-        btn.style.transform = `scale(${1 + (0.1 * intensity)})`;
-    });
-});
