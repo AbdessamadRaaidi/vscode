@@ -126,3 +126,12 @@ li {
 }
 #undoToast.show { visibility: visible; animation: fadein 0.5s; }
 @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+/* Add to your existing style.css */
+.chart-container {
+    height: 120px;
+    margin: 10px 0;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}

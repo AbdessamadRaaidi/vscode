@@ -2,6 +2,7 @@ let total = parseFloat(localStorage.getItem("savings_total")) || 0;
 let goal = parseFloat(localStorage.getItem("savings_goal")) || 0;
 let history = JSON.parse(localStorage.getItem("savings_history")) || [];
 let lastDeleted = null;
+let savingsChart; // Chart instance
 
 window.onload = () => {
     history = history.map(item => typeof item === 'string' ? { 
@@ -9,8 +10,60 @@ window.onload = () => {
         date: new Date().toLocaleDateString('fr-MA'), 
         val: parseFloat(item.replace(/[^-0.9.]/g, '')) 
     } : item);
+    
+    initChart();
     updateUI();
 };
+
+function initChart() {
+    const ctx = document.getElementById('savingsChart').getContext('2d');
+    savingsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                y: { 
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#64748b', font: { size: 9 } }
+                }
+            }
+        }
+    });
+}
+
+function updateChart() {
+    if (!savingsChart) return;
+    
+    let runningTotal = total;
+    let chartData = [total];
+    let chartLabels = ["Now"];
+
+    // Walk backward through history to build the graph points
+    history.forEach(item => {
+        runningTotal -= item.val;
+        chartData.unshift(runningTotal);
+        chartLabels.unshift(item.date);
+    });
+
+    savingsChart.data.labels = chartLabels;
+    savingsChart.data.datasets[0].data = chartData;
+    savingsChart.update('none'); // Update without animation for "soft" feel
+}
 
 function modifySavings(type) {
     const input = document.getElementById("amountInput");
@@ -20,10 +73,8 @@ function modifySavings(type) {
     const change = type === 'add' ? amount : -amount;
     total += change;
     
-    // 1. Trigger Background Glow
     triggerBackgroundEffect(type);
 
-    // 2. Trigger Soft Button Kick
     const btn = type === 'add' ? document.querySelector('.add-btn') : document.querySelector('.sub-btn');
     btn.classList.add('btn-active-press');
     setTimeout(() => btn.classList.remove('btn-active-press'), 200);
@@ -31,13 +82,9 @@ function modifySavings(type) {
     const now = new Date();
     const dateStr = now.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-    history.unshift({
-        text: `${type === 'add' ? '+' : '-'} ${amount} MAD`,
-        val: change,
-        date: dateStr
-    });
-
+    history.unshift({ text: `${type === 'add' ? '+' : '-'} ${amount} MAD`, val: change, date: dateStr });
     if (history.length > 15) history.pop();
+    
     input.value = "";
     saveData();
     updateUI();
@@ -88,6 +135,8 @@ function updateUI() {
             <button class="delete-btn" onclick="deleteTransaction(${i})">×</button>
         </li>
     `).join("");
+
+    updateChart(); // Graph updates whenever UI updates
 }
 
 function updateGoal() {
@@ -120,7 +169,6 @@ function hideUndoNotification() {
 
 function clearAll() { if (confirm("Delete all data?")) { localStorage.clear(); location.reload(); } }
 
-// --- SOFT LAYERED MOUSE LOGIC ---
 document.addEventListener('mousemove', (e) => {
     const buttons = document.querySelectorAll('.add-btn, .sub-btn, .btn-small');
     let closestBtn = null;

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Savings Tracker MAD</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -28,6 +29,10 @@
         <div class="total-display">
             <span class="label">Total Balance</span>
             <h2 id="displaySavings">0 MAD</h2>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="savingsChart"></canvas>
         </div>
 
         <div class="action-area">
