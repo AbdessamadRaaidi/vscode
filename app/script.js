@@ -111,9 +111,8 @@ function clearAll() { if (confirm("Delete all data?")) { localStorage.clear(); l
 document.addEventListener('mousemove', (e) => {
     const buttons = document.querySelectorAll('.add-btn, .sub-btn, .btn-small');
     
-    // 1. Find the "Active" button (the one closest to the mouse)
     let closestBtn = null;
-    let minDistance = 200; // Only focus if within 200px
+    let minDistance = 250; 
 
     buttons.forEach(btn => {
         const rect = btn.getBoundingClientRect();
@@ -121,38 +120,35 @@ document.addEventListener('mousemove', (e) => {
         const btnY = rect.top + rect.height / 2;
         const distance = Math.sqrt(Math.pow(e.clientX - btnX, 2) + Math.pow(e.clientY - btnY, 2));
 
+        // Reset everything first
+        btn.style.transform = `scale(1)`;
+        btn.style.boxShadow = `none`;
+        btn.classList.remove('jiggle-on-hover');
+
         if (distance < minDistance) {
             minDistance = distance;
             closestBtn = btn;
         }
-        
-        // Reset every button FIRST to prevent the "stuck bright" bug
-        btn.style.transform = `scale(1)`;
-        btn.style.boxShadow = `none`;
-        btn.style.backgroundColor = "";
-        btn.classList.remove('float-active');
     });
 
-    // 2. Only apply effects to the single closest button
     if (closestBtn) {
-        const intensity = 1 - (minDistance / 200);
-        const scale = 1 + (0.12 * intensity);
+        const intensity = 1 - (minDistance / 250);
+        const scale = 1 + (0.15 * intensity);
         
+        // 1. Growth & Glow
         closestBtn.style.transform = `scale(${scale})`;
-
+        
         if (closestBtn.classList.contains('add-btn')) {
-            // Smooth Green Glow
-            closestBtn.style.backgroundColor = `rgb(${16 + (40 * intensity)}, ${185 * intensity + 50}, ${129 * intensity + 50})`;
-            closestBtn.style.boxShadow = `0 10px 20px rgba(16, 185, 129, ${0.4 * intensity})`;
-        } else if (closestBtn.classList.contains('sub-btn')) {
-            // Smooth Red Glow
-            closestBtn.style.backgroundColor = `rgb(${239 * intensity + 50}, ${68 * intensity}, ${68 * intensity})`;
-            closestBtn.style.boxShadow = `0 10px 20px rgba(239, 68, 68, ${0.4 * intensity})`;
+            closestBtn.style.boxShadow = `0 10px 20px rgba(16, 185, 129, ${0.5 * intensity})`;
+        } else {
+            closestBtn.style.boxShadow = `0 10px 20px rgba(239, 68, 68, ${0.5 * intensity})`;
         }
 
-        // Only float if really close
-        if (intensity > 0.85) {
-            closestBtn.classList.add('float-active');
+        // 2. The Jiggle: Only if the mouse is physically over the button
+        const rect = closestBtn.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right &&
+            e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            closestBtn.classList.add('jiggle-on-hover');
         }
     }
 });

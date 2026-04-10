@@ -93,60 +93,35 @@ li {
     cursor: pointer;
 }
 
-@keyframes fadein {
-    from {bottom: 0; opacity: 0;}
-    to {bottom: 30px; opacity: 1;}
-}
-document.addEventListener('mousemove', (e) => {
-    // Select all buttons you want to react
-    const buttons = document.querySelectorAll('.btn, .add-btn, .sub-btn, .btn-small');
-    
-    buttons.forEach(btn => {
-        const rect = btn.getBoundingClientRect();
-        
-        // Find the center point of the button
-        const btnX = rect.left + rect.width / 2;
-        const btnY = rect.top + rect.height / 2;
-        
-        // Calculate distance between mouse and button center
-        const distance = Math.sqrt(
-            Math.pow(e.clientX - btnX, 2) + Math.pow(e.clientY - btnY, 2)
-        );
-
-        // Settings
-        const proximityLimit = 150; // Distance in pixels where it starts growing
-        
-        if (distance < proximityLimit) {
-            // Calculate scale: closer = bigger (max scale 1.15)
-            const scale = 1 + (0.15 * (1 - distance / proximityLimit));
-            btn.style.transform = `scale(${scale})`;
-            
-            // Add jiggle if very close
-            if (distance < 50) {
-                btn.classList.add('jiggle-active');
-            } else {
-                btn.classList.remove('jiggle-active');
-            }
-        } else {
-            // Reset if mouse is far away
-            btn.style.transform = `scale(1)`;
-            btn.classList.remove('jiggle-active');
-        }
-    });
-});
-.add-btn, .sub-btn, .btn-small {
-    /* Use 'transform' and 'background' separately for better control */
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-                background-color 0.4s ease, 
-                box-shadow 0.4s ease;
-    will-change: transform; /* Helps with performance */
-}
-
-/* Ensure the horizontal group doesn't jitter */
+/* 1. Fix Button Sizes */
 .btn-group {
     display: flex;
     gap: 15px;
-    justify-content: center;
-    align-items: center;
-    margin-top: 10px;
+    margin-top: 15px;
+}
+
+.add-btn, .sub-btn {
+    flex: 1; /* Makes them equal width */
+    min-height: 50px; /* Ensures they aren't small */
+    font-size: 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    border: none;
+    color: white;
+    font-weight: bold;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                background-color 0.3s ease;
+}
+
+/* 2. The Jiggle (High frequency but small movement) */
+@keyframes intenseJiggle {
+    0% { transform: scale(1.1) rotate(0deg); }
+    25% { transform: scale(1.1) rotate(1deg); }
+    50% { transform: scale(1.1) rotate(-1deg); }
+    75% { transform: scale(1.1) rotate(1deg); }
+    100% { transform: scale(1.1) rotate(0deg); }
+}
+
+.jiggle-on-hover {
+    animation: intenseJiggle 0.15s infinite; /* Fast jiggle when mouse is ON it */
 }
