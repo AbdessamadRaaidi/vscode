@@ -36,11 +36,12 @@ function initChart() {
                 y: { 
                     display: true, 
                     beginAtZero: true,
+                    // FIX: This forces the graph max to be your Goal
                     max: goal > 0 ? goal : undefined, 
                     grid: { color: 'rgba(255,255,255,0.05)' }, 
                     ticks: { color: '#64748b', font: { size: 9 } } 
                 } 
-            } 
+            }
         }
     });
 }
@@ -60,13 +61,6 @@ function updateChart() {
     savingsChart.update();
 }
 
-// HELPER: Convert DD/MM/YYYY string to a proper Date object safely
-function parseHistoryDate(dateStr) {
-    const parts = dateStr.split('/');
-    // Format: Day, Month (0-indexed), Year
-    return new Date(parts[2], parts[1] - 1, parts[0]);
-}
-
 function renderCalendar() {
     const grid = document.getElementById("calendarGrid");
     const month = parseInt(document.getElementById("monthSelect").value);
@@ -76,8 +70,7 @@ function renderCalendar() {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
-    // Normalize "now" to midnight for fair comparisons
-    const todayNormalized = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStr = now.toLocaleDateString('fr-MA');
 
     const dayNetMap = {};
     history.forEach(h => {
@@ -92,22 +85,17 @@ function renderCalendar() {
         const dateObj = new Date(year, month, d);
         const dateStr = dateObj.toLocaleDateString('fr-MA');
         
+        // FIX: Don't show balance for future days
         let displayBalance = "";
         let netHtml = "";
 
-        if (dateObj <= todayNormalized) {
-            // Start with the CURRENT TOTAL and go backwards
+        if (dateObj <= now || dateStr === todayStr) {
             let balAtEndOfDay = total;
-            
             history.forEach(h => {
-                const histDate = parseHistoryDate(h.date);
-                // If the history item happened strictly AFTER the day we are rendering,
-                // we "undo" that transaction from the current total to see what the balance was back then.
-                if (histDate > dateObj) {
-                    balAtEndOfDay -= h.val;
-                }
+                const parts = h.date.split('/');
+                const hDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                if (hDate > dateObj) balAtEndOfDay -= h.val;
             });
-            
             displayBalance = Math.round(balAtEndOfDay);
 
             const net = dayNetMap[dateStr] || 0;
@@ -117,7 +105,7 @@ function renderCalendar() {
         }
 
         const dayEl = document.createElement("div");
-        dayEl.className = "cal-day" + (dateStr === todayNormalized.toLocaleDateString('fr-MA') ? " today" : "");
+        dayEl.className = "cal-day" + (dateStr === todayStr ? " today" : "");
         dayEl.innerHTML = `<span>${d}</span>${netHtml}<div class="day-total">${displayBalance}</div>`;
         grid.appendChild(dayEl);
     }
@@ -129,39 +117,9 @@ function modifySavings(type) {
     if (isNaN(amount) || amount <= 0) return;
     const change = type === 'add' ? amount : -amount;
     total += change;
-    
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-MA');
+    const dateStr = new Date().toLocaleDateString('fr-MA');
     history.unshift({ text: `${type === 'add' ? '+' : '-'} ${amount} MAD`, val: change, date: dateStr });
-    
     input.value = "";
-    saveData();
-    updateUI();
-    triggerBackgroundEffect(type);
-}
-
-function deleteTransaction(i) {
-    lastDeleted = { item: history[i], index: i };
-    total -= history[i].val;
-    history.splice(i, 1);
-    saveData();
-    updateUI();
-    showUndo();
-}
-
-function showUndo() {
-    const toast = document.getElementById("undoToast");
-    toast.innerHTML = `Deleted. <button onclick="undo()" style="color:#38bdf8;background:none;border:none;font-weight:bold;cursor:pointer">Undo</button>`;
-    toast.className = "show";
-    setTimeout(() => toast.className = "", 5000);
-}
-
-function undo() {
-    if (!lastDeleted) return;
-    total += lastDeleted.item.val;
-    history.splice(lastDeleted.index, 0, lastDeleted.item);
-    lastDeleted = null;
-    document.getElementById("undoToast").className = "";
     saveData();
     updateUI();
 }
@@ -173,11 +131,9 @@ function updateUI() {
     const percent = goal > 0 ? (total / goal) * 100 : 0;
     document.getElementById("progressFill").style.width = `${Math.min(percent, 100)}%`;
     document.getElementById("progressText").innerText = `${Math.round(percent)}%`;
-    
     document.getElementById("historyList").innerHTML = history.slice(0, 10).map((item, i) => `
-        <li><span>${item.text} (${item.date})</span><button class="delete-btn" onclick="deleteTransaction(${i})">×</button></li>
+        <li><span>${item.text} (${item.date})</span></li>
     `).join("");
-    
     updateChart();
     renderCalendar();
 }
@@ -186,7 +142,7 @@ function updateGoal() {
     const val = parseFloat(document.getElementById("goalInput").value);
     if (!isNaN(val)) { 
         goal = val; 
-        if(savingsChart) savingsChart.options.scales.y.max = goal;
+        if(savingsChart) savingsChart.options.scales.y.max = goal; // Update graph scale live
         saveData(); 
         updateUI(); 
     }
@@ -196,12 +152,6 @@ function saveData() {
     localStorage.setItem("savings_total", total);
     localStorage.setItem("savings_goal", goal);
     localStorage.setItem("savings_history", JSON.stringify(history));
-}
-
-function triggerBackgroundEffect(type) {
-    const overlay = document.getElementById("bg-overlay");
-    overlay.className = type === 'add' ? 'burst-add' : 'burst-sub';
-    setTimeout(() => overlay.className = '', 700);
 }
 
 function clearAll() { if (confirm("Reset everything?")) { localStorage.clear(); location.reload(); } }
