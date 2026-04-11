@@ -4,9 +4,6 @@ let history = JSON.parse(localStorage.getItem("savings_history")) || [];
 let lastDeleted = null;
 let savingsChart;
 
-// Chart range: null = All time, otherwise {from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}
-let chartRange = null;
-
 // Calendar state
 let calYear, calMonth;
 const _now = new Date();
@@ -149,102 +146,38 @@ function updateChart() {
     if (!savingsChart) return;
 
     const todayISO = new Date().toISOString().slice(0, 10);
-    const { dayDeltas, snapshots, allDates } = buildDayMaps();
+    const { snapshots, allDates } = buildDayMaps();
 
-    // Determine range
-    let fromISO, toISO = todayISO;
-
-    if (chartRange) {
-        fromISO = chartRange.from;
-        toISO   = chartRange.to;
-    } else {
-        // All time: from earliest transaction to today
-        fromISO = allDates.length > 0 ? allDates[0] : todayISO;
-    }
-
-    // Clamp to today max
-    if (toISO > todayISO) toISO = todayISO;
-
-    // Build list of all days in window, left=oldest, right=newest
-    const days = dayRange(fromISO, toISO);
+    // Always show all time: from earliest transaction to today
+    const fromISO = allDates.length > 0 ? allDates[0] : todayISO;
+    const days = dayRange(fromISO, todayISO);
 
     const labels = [];
     const data   = [];
 
-    // Build a sorted list of [isoDate, snapshotValue] pairs for efficient forward-fill
     const sortedSnaps = allDates
         .filter(d => snapshots[d] !== undefined)
         .map(d => [d, snapshots[d]]);
 
-    let snapIdx = 0; // pointer into sortedSnaps
+    let snapIdx = 0;
     let lastSnap = null;
 
     days.forEach(d => {
-        // Format label: DD/MM
         const dt = new Date(d + 'T00:00:00');
         labels.push(dt.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' }));
 
-        // Advance pointer to consume all snapshots on or before this day
         while (snapIdx < sortedSnaps.length && sortedSnaps[snapIdx][0] <= d) {
             lastSnap = sortedSnaps[snapIdx][1];
             snapIdx++;
         }
 
-        // Use exact snapshot if this day has one, otherwise forward-fill
-        if (snapshots[d] !== undefined) {
-            data.push(snapshots[d]);
-        } else {
-            data.push(lastSnap); // null if no prior transaction at all → gap
-        }
+        data.push(snapshots[d] !== undefined ? snapshots[d] : lastSnap);
     });
 
     savingsChart.data.labels = labels;
     savingsChart.data.datasets[0].data = data;
     savingsChart.options.scales.y.max = goal > 0 ? goal : undefined;
     savingsChart.update();
-}
-
-// ─── RANGE CONTROLS ──────────────────────────────────────────────────────────
-
-function applyCustomRange() {
-    const fromVal = document.getElementById('rangeFrom').value.trim();
-    const toVal   = document.getElementById('rangeTo').value.trim();
-
-    // Accept DD/MM/YYYY or DD-MM-YYYY
-    function parseInput(s) {
-        const p = s.split(/[\/\-]/);
-        if (p.length === 3) {
-            const [d, m, y] = p;
-            if (y.length === 4) return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-        }
-        return null;
-    }
-
-    const from = parseInput(fromVal);
-    const to   = parseInput(toVal);
-
-    if (!from || !to) {
-        alert('Please enter dates as DD/MM/YYYY\nExample: 01/01/2025');
-        return;
-    }
-    if (from > to) {
-        alert('"From" date must be before "To" date.');
-        return;
-    }
-
-    chartRange = { from, to };
-    updateChart();
-
-    // Show abandon button
-    document.getElementById('abandonBtn').style.display = 'inline-flex';
-}
-
-function abandonRange() {
-    chartRange = null;
-    document.getElementById('rangeFrom').value = '';
-    document.getElementById('rangeTo').value   = '';
-    document.getElementById('abandonBtn').style.display = 'none';
-    updateChart();
 }
 
 // ─── SAVINGS ACTIONS ──────────────────────────────────────────────────────────
