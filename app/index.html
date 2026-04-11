@@ -68,16 +68,18 @@
 
         <!-- CENTER PANEL: Chart + Calendar -->
         <div class="panel panel-center">
+
             <div class="chart-header">
                 <div class="section-title" style="margin-bottom:0;">Savings History</div>
-                <div class="period-btns">
-                    <button class="period-btn active" data-days="7">7D</button>
-                    <button class="period-btn" data-days="30">30D</button>
-                    <button class="period-btn" data-days="90">90D</button>
-                    <button class="period-btn" data-days="365">1Y</button>
-                    <button class="period-btn" data-days="0">All</button>
+                <div class="range-controls">
+                    <input type="text" id="rangeFrom" class="range-input" placeholder="DD/MM/YYYY">
+                    <span class="range-sep">→</span>
+                    <input type="text" id="rangeTo" class="range-input" placeholder="DD/MM/YYYY">
+                    <button onclick="applyCustomRange()" class="range-btn">Apply</button>
+                    <button onclick="abandonRange()" class="abandon-btn" id="abandonBtn" style="display:none;">✕ Abandon</button>
                 </div>
             </div>
+
             <div class="chart-container">
                 <canvas id="savingsChart"></canvas>
             </div>

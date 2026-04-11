@@ -1,35 +1,80 @@
 let total = parseFloat(localStorage.getItem("savings_total")) || 0;
-let goal = parseFloat(localStorage.getItem("savings_goal")) || 0;
+let goal  = parseFloat(localStorage.getItem("savings_goal"))  || 0;
 let history = JSON.parse(localStorage.getItem("savings_history")) || [];
 let lastDeleted = null;
 let savingsChart;
-let chartPeriodDays = 7; // default period
+
+// Chart range: null = All time, otherwise {from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}
+let chartRange = null;
 
 // Calendar state
 let calYear, calMonth;
-const now = new Date();
-calYear = now.getFullYear();
-calMonth = now.getMonth();
+const _now = new Date();
+calYear  = _now.getFullYear();
+calMonth = _now.getMonth();
 
 window.onload = () => {
-    history = history.map(item => typeof item === 'string' ? { 
-        text: item, date: new Date().toLocaleDateString('fr-MA'), val: parseFloat(item.replace(/[^-0.9.]/g, '')) 
+    history = history.map(item => typeof item === 'string' ? {
+        text: item,
+        date: new Date().toLocaleDateString('fr-MA'),
+        val: parseFloat(item.replace(/[^-0-9.]/g, ''))
     } : item);
     initChart();
     renderCalDayNames();
-
-    // Wire period buttons
-    document.querySelectorAll('.period-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            chartPeriodDays = parseInt(btn.dataset.days);
-            updateChart();
-        });
-    });
-
     updateUI();
 };
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+function getISOFromItem(item) {
+    if (item.isoDate) return item.isoDate;
+    if (item.date) {
+        const parts = item.date.split(/[\/ ]/);
+        if (parts.length >= 2) {
+            const day   = parts[0].padStart(2, '0');
+            const month = parts[1].padStart(2, '0');
+            const year  = (parts[2] && parts[2].length === 4) ? parts[2] : new Date().getFullYear();
+            return `${year}-${month}-${day}`;
+        }
+    }
+    return new Date().toISOString().slice(0, 10);
+}
+
+// Build { isoDate -> netDelta } and { isoDate -> balanceSnapshot } for all history
+function buildDayMaps() {
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const dayDeltas = {};
+    history.forEach(item => {
+        const iso = getISOFromItem(item);
+        dayDeltas[iso] = (dayDeltas[iso] || 0) + item.val;
+    });
+    // snapshot(d) = total - sum of all vals on dates AFTER d
+    const allDates = Object.keys(dayDeltas).sort();
+    const snapshots = {};
+    allDates.forEach(d => {
+        let snap = total;
+        allDates.forEach(d2 => { if (d2 > d) snap -= dayDeltas[d2]; });
+        snapshots[d] = snap;
+    });
+    if (total !== 0 && snapshots[todayISO] === undefined) {
+        snapshots[todayISO] = total;
+    }
+    return { dayDeltas, snapshots, allDates };
+}
+
+// Enumerate all days between two ISO strings (inclusive)
+function dayRange(fromISO, toISO) {
+    const days = [];
+    const cur = new Date(fromISO);
+    const end = new Date(toISO);
+    while (cur <= end) {
+        days.push(cur.toISOString().slice(0, 10));
+        cur.setDate(cur.getDate() + 1);
+    }
+    return days;
+}
+
+// ─── CHART ────────────────────────────────────────────────────────────────────
 
 function initChart() {
     const ctx = document.getElementById('savingsChart').getContext('2d');
@@ -40,21 +85,29 @@ function initChart() {
             datasets: [{
                 data: [],
                 borderColor: '#38bdf8',
-                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                backgroundColor: 'rgba(56,189,248,0.08)',
                 borderWidth: 2,
                 fill: true,
                 tension: 0.4,
                 pointRadius: 3,
+                pointHoverRadius: 5,
                 pointBackgroundColor: '#38bdf8',
-                spanGaps: true
+                spanGaps: false
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { 
+            animation: { duration: 300 },
+            plugins: {
                 legend: { display: false },
-                tooltip: { enabled: true, callbacks: { label: (c) => c.parsed.y + ' MAD' } }
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        title: ctx => ctx[0].label,
+                        label: ctx => ' ' + ctx.parsed.y.toLocaleString() + ' MAD'
+                    }
+                }
             },
             scales: {
                 x: {
@@ -62,104 +115,126 @@ function initChart() {
                     ticks: {
                         color: '#64748b',
                         font: { size: 9 },
-                        maxTicksLimit: 8,
-                        maxRotation: 0
+                        maxTicksLimit: 12,
+                        maxRotation: 0,
+                        autoSkip: true
                     },
-                    grid: { display: false }
+                    grid: { color: 'rgba(255,255,255,0.04)' }
                 },
-                y: { 
+                y: {
                     beginAtZero: true,
                     max: goal > 0 ? goal : undefined,
                     grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#64748b', font: { size: 9 } }
+                    ticks: {
+                        color: '#64748b',
+                        font: { size: 9 },
+                        callback: v => v.toLocaleString()
+                    }
                 }
             }
         }
     });
 }
 
-function getISOFromItem(item) {
-    if (item.isoDate) return item.isoDate;
-    if (item.date) {
-        const parts = item.date.split(/[\/ ]/);
-        if (parts.length >= 2) {
-            const day   = parts[0].padStart(2, '0');
-            const month = parts[1].padStart(2, '0');
-            const year  = parts[2] && parts[2].length === 4 ? parts[2] : new Date().getFullYear();
-            return `${year}-${month}-${day}`;
-        }
-    }
-    return new Date().toISOString().slice(0, 10);
-}
-
 function updateChart() {
     if (!savingsChart) return;
 
     const todayISO = new Date().toISOString().slice(0, 10);
+    const { dayDeltas, snapshots, allDates } = buildDayMaps();
 
-    // Build daily delta map for ALL history
-    const dayDeltas = {};
-    history.forEach(item => {
-        const iso = getISOFromItem(item);
-        dayDeltas[iso] = (dayDeltas[iso] || 0) + item.val;
-    });
+    // Determine range
+    let fromISO, toISO = todayISO;
 
-    // Find earliest date across all history
-    const allHistDates = Object.keys(dayDeltas).sort();
-    const earliestISO  = allHistDates[0] || todayISO;
-
-    // Determine window start
-    let windowStart;
-    if (chartPeriodDays === 0) {
-        windowStart = earliestISO; // All
+    if (chartRange) {
+        fromISO = chartRange.from;
+        toISO   = chartRange.to;
     } else {
-        const d = new Date();
-        d.setDate(d.getDate() - (chartPeriodDays - 1));
-        windowStart = d.toISOString().slice(0, 10);
+        // All time: from earliest transaction to today
+        fromISO = allDates.length > 0 ? allDates[0] : todayISO;
     }
 
-    // Build full list of days from windowStart → today
-    const days = [];
-    const cur = new Date(windowStart);
-    const end = new Date(todayISO);
-    while (cur <= end) {
-        days.push(cur.toISOString().slice(0, 10));
-        cur.setDate(cur.getDate() + 1);
-    }
+    // Clamp to today max
+    if (toISO > todayISO) toISO = todayISO;
 
-    // Reconstruct balance for each day in window
-    // snapshot(d) = total - sum of vals on days AFTER d
-    const allDates = Object.keys(dayDeltas).sort();
+    // Build list of all days in window, left=oldest, right=newest
+    const days = dayRange(fromISO, toISO);
 
     const labels = [];
     const data   = [];
 
     days.forEach(d => {
-        let snap = total;
-        allDates.forEach(d2 => { if (d2 > d) snap -= dayDeltas[d2]; });
-        // Only include days that are at or after the earliest transaction,
-        // or today (so the line always ends at present)
-        if (d >= earliestISO || d === todayISO) {
-            // Format label
-            const dt = new Date(d);
-            const label = dt.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' });
-            labels.push(label);
-            data.push(snap);
+        // Format label: DD/MM
+        const dt = new Date(d + 'T00:00:00');
+        labels.push(dt.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' }));
+
+        if (snapshots[d] !== undefined) {
+            data.push(snapshots[d]);
         } else {
-            labels.push('');
-            data.push(null);
+            // Interpolate: find the closest previous snapshot
+            let snap = null;
+            for (let i = allDates.length - 1; i >= 0; i--) {
+                if (allDates[i] <= d && snapshots[allDates[i]] !== undefined) {
+                    snap = snapshots[allDates[i]];
+                    break;
+                }
+            }
+            data.push(snap); // null if no prior data → gap
         }
     });
 
     savingsChart.data.labels = labels;
     savingsChart.data.datasets[0].data = data;
     savingsChart.options.scales.y.max = goal > 0 ? goal : undefined;
-    savingsChart.options.scales.x.display = days.length <= 60;
     savingsChart.update();
 }
 
+// ─── RANGE CONTROLS ──────────────────────────────────────────────────────────
+
+function applyCustomRange() {
+    const fromVal = document.getElementById('rangeFrom').value.trim();
+    const toVal   = document.getElementById('rangeTo').value.trim();
+
+    // Accept DD/MM/YYYY or DD-MM-YYYY
+    function parseInput(s) {
+        const p = s.split(/[\/\-]/);
+        if (p.length === 3) {
+            const [d, m, y] = p;
+            if (y.length === 4) return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+        }
+        return null;
+    }
+
+    const from = parseInput(fromVal);
+    const to   = parseInput(toVal);
+
+    if (!from || !to) {
+        alert('Please enter dates as DD/MM/YYYY\nExample: 01/01/2025');
+        return;
+    }
+    if (from > to) {
+        alert('"From" date must be before "To" date.');
+        return;
+    }
+
+    chartRange = { from, to };
+    updateChart();
+
+    // Show abandon button
+    document.getElementById('abandonBtn').style.display = 'inline-flex';
+}
+
+function abandonRange() {
+    chartRange = null;
+    document.getElementById('rangeFrom').value = '';
+    document.getElementById('rangeTo').value   = '';
+    document.getElementById('abandonBtn').style.display = 'none';
+    updateChart();
+}
+
+// ─── SAVINGS ACTIONS ──────────────────────────────────────────────────────────
+
 function modifySavings(type) {
-    const input = document.getElementById("amountInput");
+    const input  = document.getElementById("amountInput");
     const amount = parseFloat(input.value);
     if (isNaN(amount) || amount <= 0) return;
 
@@ -172,12 +247,11 @@ function modifySavings(type) {
     setTimeout(() => btn.classList.remove('btn-active-press'), 200);
 
     const nowDate = new Date();
-    const dateStr = nowDate.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    // Store ISO date for calendar lookup (YYYY-MM-DD)
+    const dateStr = nowDate.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const isoDate = nowDate.toISOString().slice(0, 10);
 
     history.unshift({ text: `${type === 'add' ? '+' : '-'} ${amount} MAD`, val: change, date: dateStr, isoDate });
-    if (history.length > 50) history.pop();
+    if (history.length > 200) history.pop();
     input.value = "";
     saveData();
     updateUI();
@@ -190,12 +264,10 @@ function triggerBackgroundEffect(type) {
 }
 
 function deleteTransaction(index) {
-    lastDeleted = { item: history[index], index: index };
+    lastDeleted = { item: history[index], index };
     total -= history[index].val;
     history.splice(index, 1);
-    saveData();
-    updateUI();
-    showUndoNotification();
+    saveData(); updateUI(); showUndoNotification();
 }
 
 function undoDelete() {
@@ -204,73 +276,70 @@ function undoDelete() {
     history.splice(lastDeleted.index, 0, lastDeleted.item);
     lastDeleted = null;
     hideUndoNotification();
-    saveData();
-    updateUI();
+    saveData(); updateUI();
 }
+
+// ─── UI UPDATE ────────────────────────────────────────────────────────────────
 
 function updateUI() {
     document.getElementById("displaySavings").innerText = `${total.toLocaleString()} MAD`;
     document.getElementById("goalValue").innerText = goal.toLocaleString();
     const remaining = Math.max(goal - total, 0);
     document.getElementById("displayRemaining").innerText = `${remaining.toLocaleString()} MAD left`;
-    if (document.getElementById("statGoal"))     document.getElementById("statGoal").innerText = `${goal.toLocaleString()} MAD`;
+    if (document.getElementById("statGoal"))      document.getElementById("statGoal").innerText      = `${goal.toLocaleString()} MAD`;
     if (document.getElementById("statRemaining")) document.getElementById("statRemaining").innerText = `${remaining.toLocaleString()} MAD`;
     const percent = goal > 0 ? (total / goal) * 100 : 0;
     document.getElementById("progressFill").style.width = `${Math.min(percent, 100)}%`;
-    document.getElementById("progressText").innerText = `${Math.round(percent)}%`;
+    document.getElementById("progressText").innerText   = `${Math.round(percent)}%`;
 
     document.getElementById("historyList").innerHTML = history.map((item, i) => `
         <li>
             <div class="history-item-left">
                 <span>${item.text}</span>
-                <span style="font-size: 0.7rem; color: #64748b;">${item.date}</span>
+                <span style="font-size:0.7rem;color:#64748b;">${item.date}</span>
             </div>
             <button class="delete-btn" onclick="deleteTransaction(${i})">×</button>
         </li>
     `).join("");
+
     updateChart();
     renderCalendar();
 }
 
 function updateGoal() {
-    const goalVal = parseFloat(document.getElementById("goalInput").value);
-    if (!isNaN(goalVal)) { goal = goalVal; saveData(); updateUI(); document.getElementById("goalInput").value = ""; }
+    const v = parseFloat(document.getElementById("goalInput").value);
+    if (!isNaN(v)) { goal = v; saveData(); updateUI(); document.getElementById("goalInput").value = ""; }
 }
 
 function saveData() {
-    localStorage.setItem("savings_total", total);
-    localStorage.setItem("savings_goal", goal);
+    localStorage.setItem("savings_total",   total);
+    localStorage.setItem("savings_goal",    goal);
     localStorage.setItem("savings_history", JSON.stringify(history));
 }
 
 function showUndoNotification() {
-    let el = document.getElementById("undoToast") || document.createElement("div");
-    el.id = "undoToast"; document.body.appendChild(el);
-    el.innerHTML = `Deleted. <button onclick="undoDelete()" style="background:#38bdf8;border:none;padding:5px;border-radius:5px;cursor:pointer;font-weight:bold">Undo</button>`;
+    const el = document.getElementById("undoToast");
+    el.innerHTML = `Deleted. <button onclick="undoDelete()" style="background:#38bdf8;border:none;padding:5px 10px;border-radius:6px;cursor:pointer;font-weight:bold;color:#000">Undo</button>`;
     el.className = "show";
-    setTimeout(() => { if(el.className === "show") el.className = ""; }, 5000);
+    setTimeout(() => { if (el.className === "show") el.className = ""; }, 5000);
 }
-
 function hideUndoNotification() { document.getElementById("undoToast").className = ""; }
 function clearAll() { if (confirm("Clear all?")) { localStorage.clear(); location.reload(); } }
 
 document.addEventListener('mousemove', (e) => {
-    const buttons = document.querySelectorAll('.add-btn, .sub-btn, .goal-btn');
-    buttons.forEach(btn => {
+    document.querySelectorAll('.add-btn, .sub-btn, .goal-btn').forEach(btn => {
         const rect = btn.getBoundingClientRect();
-        const distance = Math.sqrt(Math.pow(e.clientX - (rect.left + rect.width / 2), 2) + Math.pow(e.clientY - (rect.top + rect.height / 2), 2));
-        const intensity = Math.max(0, 1 - (distance / 200));
-        btn.style.transform = `scale(${1 + (0.1 * intensity)})`;
+        const dist = Math.sqrt((e.clientX - (rect.left + rect.width/2))**2 + (e.clientY - (rect.top + rect.height/2))**2);
+        const intensity = Math.max(0, 1 - dist / 200);
+        btn.style.transform = `scale(${1 + 0.1 * intensity})`;
     });
 });
 
-// ─── CALENDAR ────────────────────────────────────────────────────────────────
+// ─── CALENDAR ─────────────────────────────────────────────────────────────────
 
 function renderCalDayNames() {
-    const names = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-    document.getElementById('calDayNames').innerHTML = names.map(n =>
-        `<div class="cal-day-name">${n}</div>`
-    ).join('');
+    document.getElementById('calDayNames').innerHTML =
+        ['Mo','Tu','We','Th','Fr','Sa','Su'].map(n => `<div class="cal-day-name">${n}</div>`).join('');
 }
 
 function changeMonth(dir) {
@@ -281,70 +350,29 @@ function changeMonth(dir) {
 }
 
 function renderCalendar() {
-    const monthNames = ['January','February','March','April','May','June',
-                        'July','August','September','October','November','December'];
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     document.getElementById('calTitle').textContent = `${monthNames[calMonth]} ${calYear}`;
 
     const todayISO = new Date().toISOString().slice(0, 10);
+    const { dayDeltas, snapshots } = buildDayMaps();
 
-    // ── Build daily delta map from history ──────────────────────────────────
-    // Each history item may have an isoDate (new items) or just a `date`
-    // string in fr-MA format like "12/04 14:30". We'll try to parse both.
-    const dayDeltas = {}; // isoDate -> net change that day
-
-    history.forEach(item => {
-        let iso = item.isoDate || null;
-
-        // Fallback: try to parse the fr-MA date string "DD/MM HH:MM" or "DD/MM/YYYY"
-        if (!iso && item.date) {
-            const parts = item.date.split(/[\/ ]/);
-            if (parts.length >= 2) {
-                const day   = parts[0].padStart(2, '0');
-                const month = parts[1].padStart(2, '0');
-                // If year is present use it, otherwise assume current year
-                const year  = parts[2] && parts[2].length === 4 ? parts[2] : new Date().getFullYear();
-                iso = `${year}-${month}-${day}`;
-            }
-        }
-
-        if (!iso) iso = todayISO; // last-resort fallback
-        dayDeltas[iso] = (dayDeltas[iso] || 0) + item.val;
-    });
-
-    // ── Reconstruct end-of-day balance snapshots ─────────────────────────────
-    // total = current balance = sum of ALL history vals
-    // snapshot(d) = total minus sum of vals on dates STRICTLY after d
-    const allDates = Object.keys(dayDeltas).sort();
-    const snapshots = {};
-    allDates.forEach(d => {
-        let snap = total;
-        allDates.forEach(d2 => { if (d2 > d) snap -= dayDeltas[d2]; });
-        snapshots[d] = snap;
-    });
-    // Always show today's snapshot as current total
-    if (history.length > 0 || total !== 0) {
-        snapshots[todayISO] = snapshots[todayISO] !== undefined ? snapshots[todayISO] : total;
-    }
-
-    // ── Render cells ─────────────────────────────────────────────────────────
-    const firstDow = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
-    const startOffset = (firstDow + 6) % 7; // Monday-based
+    const firstDow   = new Date(calYear, calMonth, 1).getDay();
+    const startOffset = (firstDow + 6) % 7;
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
     let html = '';
     for (let i = 0; i < startOffset; i++) html += '<div class="cal-cell empty"></div>';
 
     for (let d = 1; d <= daysInMonth; d++) {
-        const iso = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const iso     = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const isToday = iso === todayISO;
         const snap    = snapshots[iso];
         const delta   = dayDeltas[iso];
 
-        let totalHtml = '', deltaHtml = '';
-
+        let snapHtml = '', deltaHtml = '';
         if (snap !== undefined) {
             const cls = snap > 0 ? 'pos' : snap < 0 ? 'neg' : 'zero';
-            totalHtml = `<div class="cal-snap ${cls}">${Math.round(snap)}</div>`;
+            snapHtml = `<div class="cal-snap ${cls}">${Math.round(snap)}</div>`;
         }
         if (delta !== undefined) {
             const cls  = delta >= 0 ? 'delta-pos' : 'delta-neg';
@@ -352,12 +380,10 @@ function renderCalendar() {
             deltaHtml = `<div class="cal-delta ${cls}">${sign}${Math.round(delta)}</div>`;
         }
 
-        html += `
-            <div class="cal-cell${isToday ? ' today' : ''}">
-                <div class="cal-num">${d}</div>
-                ${totalHtml}
-                ${deltaHtml}
-            </div>`;
+        html += `<div class="cal-cell${isToday ? ' today' : ''}">
+            <div class="cal-num">${d}</div>
+            ${snapHtml}${deltaHtml}
+        </div>`;
     }
 
     document.getElementById('calGrid').innerHTML = html;

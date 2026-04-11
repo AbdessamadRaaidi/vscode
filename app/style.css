@@ -420,3 +420,65 @@ li:hover { border-color: #2d3f5a; }
 }
 .period-btn:hover { border-color: #38bdf8; color: #38bdf8; }
 .period-btn.active { background: rgba(56,189,248,0.12); border-color: #38bdf8; color: #38bdf8; }
+
+/* ── CHART HEADER + RANGE CONTROLS ── */
+.chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.range-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.range-input {
+    width: 100px;
+    padding: 5px 8px;
+    border-radius: 7px;
+    border: 1px solid #1e2d45;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.75rem;
+    outline: none;
+    transition: border-color 0.2s;
+    text-align: center;
+}
+.range-input:focus { border-color: var(--accent); }
+.range-input::placeholder { color: #475569; font-size: 0.7rem; }
+
+.range-sep {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.range-btn {
+    padding: 5px 12px;
+    background: #2563eb;
+    border: none;
+    color: white;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+.range-btn:hover { opacity: 0.85; }
+
+.abandon-btn {
+    padding: 5px 12px;
+    background: none;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s;
+}
+.abandon-btn:hover { background: var(--danger); color: white; }
