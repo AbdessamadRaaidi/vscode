@@ -60,11 +60,10 @@ function updateChart() {
     savingsChart.update();
 }
 
-// HELPER: Convert DD/MM/YYYY string to a proper Date object safely
-function parseHistoryDate(dateStr) {
-    const parts = dateStr.split('/');
-    // Format: Day, Month (0-indexed), Year
-    return new Date(parts[2], parts[1] - 1, parts[0]);
+// Robust date parser for DD/MM/YYYY
+function parseDMY(s) {
+    const b = s.split(/\D/);
+    return new Date(b[2], b[1] - 1, b[0]);
 }
 
 function renderCalendar() {
@@ -76,49 +75,59 @@ function renderCalendar() {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
-    // Normalize "now" to midnight for fair comparisons
-    const todayNormalized = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStr = now.toLocaleDateString('fr-MA');
 
-    const dayNetMap = {};
+    // 1. Calculate the 'Starting Balance' (Balance before the first history item)
+    let historySum = history.reduce((acc, curr) => acc + curr.val, 0);
+    let startBalance = total - historySum;
+
+    // 2. Build a Timeline: Map every date that has a transaction to its NET change
+    const dailyNet = {};
     history.forEach(h => {
-        if (!dayNetMap[h.date]) dayNetMap[h.date] = 0;
-        dayNetMap[h.date] += h.val;
+        if (!dailyNet[h.date]) dailyNet[h.date] = 0;
+        dailyNet[h.date] += h.val;
     });
 
+    // 3. Generate all days from 2025-01-01 to the end of the selected month
+    // This ensures we carry the balance forward correctly through the months.
+    let runningBalance = startBalance;
+    const balanceTimeline = {};
+    
+    let iterDate = new Date(2025, 0, 1);
+    const endOfSelectedMonth = new Date(year, month, daysInMonth);
+
+    while (iterDate <= endOfSelectedMonth) {
+        let dKey = iterDate.toLocaleDateString('fr-MA');
+        if (dailyNet[dKey]) {
+            runningBalance += dailyNet[dKey];
+        }
+        balanceTimeline[dKey] = runningBalance;
+        iterDate.setDate(iterDate.getDate() + 1);
+    }
+
+    // 4. Render Grid
     const padding = firstDay === 0 ? 6 : firstDay - 1;
     for (let p = 0; p < padding; p++) grid.appendChild(document.createElement("div"));
 
     for (let d = 1; d <= daysInMonth; d++) {
         const dateObj = new Date(year, month, d);
         const dateStr = dateObj.toLocaleDateString('fr-MA');
+        const isFuture = dateObj > now && dateStr !== todayStr;
         
-        let displayBalance = "";
+        let displayVal = "";
         let netHtml = "";
 
-        if (dateObj <= todayNormalized) {
-            // Start with the CURRENT TOTAL and go backwards
-            let balAtEndOfDay = total;
-            
-            history.forEach(h => {
-                const histDate = parseHistoryDate(h.date);
-                // If the history item happened strictly AFTER the day we are rendering,
-                // we "undo" that transaction from the current total to see what the balance was back then.
-                if (histDate > dateObj) {
-                    balAtEndOfDay -= h.val;
-                }
-            });
-            
-            displayBalance = Math.round(balAtEndOfDay);
-
-            const net = dayNetMap[dateStr] || 0;
+        if (!isFuture) {
+            displayVal = Math.round(balanceTimeline[dateStr] || runningBalance);
+            const net = dailyNet[dateStr] || 0;
             if (net !== 0) {
                 netHtml = `<div class="net ${net > 0 ? 'pos' : 'neg'}">${net > 0 ? '+' : ''}${net}</div>`;
             }
         }
 
         const dayEl = document.createElement("div");
-        dayEl.className = "cal-day" + (dateStr === todayNormalized.toLocaleDateString('fr-MA') ? " today" : "");
-        dayEl.innerHTML = `<span>${d}</span>${netHtml}<div class="day-total">${displayBalance}</div>`;
+        dayEl.className = "cal-day" + (dateStr === todayStr ? " today" : "");
+        dayEl.innerHTML = `<span>${d}</span>${netHtml}<div class="day-total">${displayVal}</div>`;
         grid.appendChild(dayEl);
     }
 }
@@ -130,8 +139,7 @@ function modifySavings(type) {
     const change = type === 'add' ? amount : -amount;
     total += change;
     
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-MA');
+    const dateStr = new Date().toLocaleDateString('fr-MA');
     history.unshift({ text: `${type === 'add' ? '+' : '-'} ${amount} MAD`, val: change, date: dateStr });
     
     input.value = "";
@@ -173,35 +181,7 @@ function updateUI() {
     const percent = goal > 0 ? (total / goal) * 100 : 0;
     document.getElementById("progressFill").style.width = `${Math.min(percent, 100)}%`;
     document.getElementById("progressText").innerText = `${Math.round(percent)}%`;
-    
     document.getElementById("historyList").innerHTML = history.slice(0, 10).map((item, i) => `
         <li><span>${item.text} (${item.date})</span><button class="delete-btn" onclick="deleteTransaction(${i})">×</button></li>
     `).join("");
-    
-    updateChart();
-    renderCalendar();
-}
-
-function updateGoal() {
-    const val = parseFloat(document.getElementById("goalInput").value);
-    if (!isNaN(val)) { 
-        goal = val; 
-        if(savingsChart) savingsChart.options.scales.y.max = goal;
-        saveData(); 
-        updateUI(); 
-    }
-}
-
-function saveData() {
-    localStorage.setItem("savings_total", total);
-    localStorage.setItem("savings_goal", goal);
-    localStorage.setItem("savings_history", JSON.stringify(history));
-}
-
-function triggerBackgroundEffect(type) {
-    const overlay = document.getElementById("bg-overlay");
-    overlay.className = type === 'add' ? 'burst-add' : 'burst-sub';
-    setTimeout(() => overlay.className = '', 700);
-}
-
-function clearAll() { if (confirm("Reset everything?")) { localStorage.clear(); location.reload(); } }
+    updateChart
