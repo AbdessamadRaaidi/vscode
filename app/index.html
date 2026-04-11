@@ -10,64 +10,89 @@
 <body>
     <div id="bg-overlay"></div>
 
-    <div class="app-card">
-        <header>
-            <h1>My Savings</h1>
-            <div class="goal-tag">Goal: <span id="goalValue">0</span> MAD</div>
-        </header>
-
-        <div class="progress-section">
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="app-logo">💰</span>
+            <span class="app-name">Savings Tracker</span>
+        </div>
+        <div class="topbar-center">
             <div class="progress-bar-bg">
                 <div id="progressFill" class="progress-fill"></div>
             </div>
             <div class="progress-labels">
                 <span id="progressText">0%</span>
+                <span>Goal: <span id="goalValue">0</span> MAD</span>
                 <span id="displayRemaining">0 MAD left</span>
             </div>
         </div>
-
-        <div class="total-display">
-            <span class="label">Total Balance</span>
-            <h2 id="displaySavings">0 MAD</h2>
+        <div class="topbar-right">
+            <button onclick="clearAll()" class="clear-btn">Reset All</button>
         </div>
+    </div>
 
-        <div class="chart-container">
-            <canvas id="savingsChart"></canvas>
-        </div>
+    <!-- MAIN LAYOUT: 3 columns -->
+    <div class="desktop-layout">
 
-        <div class="action-area">
-            <input type="number" id="amountInput" placeholder="Amount (MAD)">
+        <!-- LEFT PANEL: Balance + Actions -->
+        <div class="panel panel-left">
+            <div class="balance-card">
+                <div class="balance-label">Total Balance</div>
+                <h2 id="displaySavings">0 MAD</h2>
+            </div>
+
+            <div class="stat-row">
+                <div class="stat-box">
+                    <div class="stat-label">Goal</div>
+                    <div class="stat-val" id="statGoal">0 MAD</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Remaining</div>
+                    <div class="stat-val" id="statRemaining">0 MAD</div>
+                </div>
+            </div>
+
+            <div class="section-title">Add / Remove</div>
+            <input type="number" id="amountInput" placeholder="Amount (MAD)" class="input-field">
             <div class="btn-group">
                 <button onclick="modifySavings('add')" class="add-btn">+ Add</button>
-                <button onclick="modifySavings('sub')" class="sub-btn">- Minus</button>
+                <button onclick="modifySavings('sub')" class="sub-btn">− Minus</button>
             </div>
-        </div>
 
-        <div class="settings-area">
+            <div class="section-title" style="margin-top:1.5rem;">Set Goal</div>
             <div class="goal-input-group">
-                <input type="number" id="goalInput" placeholder="Set Goal">
+                <input type="number" id="goalInput" placeholder="Target (MAD)" class="input-field" style="margin-bottom:0;flex:1;">
                 <button onclick="updateGoal()" class="goal-btn">Set</button>
             </div>
         </div>
 
-        <!-- CALENDAR -->
-        <div class="calendar-section">
-            <div class="calendar-header">
-                <button class="cal-nav-btn" onclick="changeMonth(-1)">&#8249;</button>
-                <span id="calTitle" class="cal-title"></span>
-                <button class="cal-nav-btn" onclick="changeMonth(1)">&#8250;</button>
+        <!-- CENTER PANEL: Chart + Calendar -->
+        <div class="panel panel-center">
+            <div class="section-title">Savings History</div>
+            <div class="chart-container">
+                <canvas id="savingsChart"></canvas>
             </div>
-            <div class="cal-day-names" id="calDayNames"></div>
-            <div class="cal-grid" id="calGrid"></div>
+
+            <div class="calendar-section">
+                <div class="calendar-header">
+                    <button class="cal-nav-btn" onclick="changeMonth(-1)">&#8249;</button>
+                    <span id="calTitle" class="cal-title"></span>
+                    <button class="cal-nav-btn" onclick="changeMonth(1)">&#8250;</button>
+                </div>
+                <div class="cal-day-names" id="calDayNames"></div>
+                <div class="cal-grid" id="calGrid"></div>
+            </div>
         </div>
 
-        <div class="history">
-            <h3>Recent Activity</h3>
+        <!-- RIGHT PANEL: Activity -->
+        <div class="panel panel-right">
+            <div class="section-title">Recent Activity</div>
             <ul id="historyList"></ul>
-            <button onclick="clearAll()" class="clear-btn">Reset All Data</button>
         </div>
+
     </div>
 
+    <div id="undoToast"></div>
     <script src="script.js"></script>
 </body>
 </html>

@@ -125,8 +125,10 @@ function undoDelete() {
 function updateUI() {
     document.getElementById("displaySavings").innerText = `${total.toLocaleString()} MAD`;
     document.getElementById("goalValue").innerText = goal.toLocaleString();
-    const remaining = goal - total;
-    document.getElementById("displayRemaining").innerText = `${(remaining > 0 ? remaining : 0).toLocaleString()} MAD left`;
+    const remaining = Math.max(goal - total, 0);
+    document.getElementById("displayRemaining").innerText = `${remaining.toLocaleString()} MAD left`;
+    if (document.getElementById("statGoal"))     document.getElementById("statGoal").innerText = `${goal.toLocaleString()} MAD`;
+    if (document.getElementById("statRemaining")) document.getElementById("statRemaining").innerText = `${remaining.toLocaleString()} MAD`;
     const percent = goal > 0 ? (total / goal) * 100 : 0;
     document.getElementById("progressFill").style.width = `${Math.min(percent, 100)}%`;
     document.getElementById("progressText").innerText = `${Math.round(percent)}%`;
