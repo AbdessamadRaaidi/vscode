@@ -3,454 +3,545 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TITAN RUN | BIRD'S EYE EDITION</title>
+    <title>SUBWAY SURFERS | TITAN OMNI-ENGINE PRO</title>
     <style>
+        /* CSS RESET & THEME */
         :root {
-            --neon-cyan: #00f2ff;
-            --neon-magenta: #ff00ff;
-            --warning-yellow: #ffcc00;
-            --deep-space: #010105;
-            --danger-red: #ff3344;
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff00ff;
+            --gold: #ffcc00;
+            --danger: #ff4444;
+            --bg-dark: #020205;
+            --glass: rgba(255, 255, 255, 0.1);
         }
 
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background: var(--deep-space);
-            font-family: 'Inter', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-dark);
             color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         canvas {
             display: block;
-            image-rendering: auto;
-            filter: contrast(1.1) brightness(1.1);
+            touch-action: none;
+            filter: contrast(1.1) saturate(1.2) brightness(1.05);
         }
 
-        /* ADVANCED HUD SYSTEM */
-        #game-interface {
-            position: absolute; inset: 0;
-            pointer-events: none; z-index: 50;
-            display: flex; flex-direction: column;
+        /* HIGH-FIDELITY USER INTERFACE */
+        #ui-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
             justify-content: space-between;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             padding: 40px;
         }
 
-        .header-section {
-            display: flex; justify-content: space-between; align-items: flex-start;
+        .stats-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
         }
 
-        .score-container { text-align: right; }
-        #score-val {
-            font-size: 84px; font-weight: 900; line-height: 0.8;
-            letter-spacing: -3px; text-shadow: 0 0 25px var(--neon-cyan);
-        }
-        #speed-multiplier {
-            font-size: 22px; color: var(--warning-yellow);
-            font-weight: 800; letter-spacing: 6px; margin-top: 15px;
+        #score-display {
+            font-size: 82px;
+            font-weight: 900;
+            letter-spacing: -4px;
+            text-shadow: 0 0 30px var(--neon-blue);
+            line-height: 0.8;
         }
 
-        .vitals-panel {
-            display: flex; gap: 18px; background: rgba(255,255,255,0.05);
-            padding: 20px 35px; border-radius: 60px;
-            backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.15);
+        #multiplier-tag {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--gold);
+            letter-spacing: 5px;
+            margin-top: 10px;
         }
 
-        .heart {
-            width: 32px; height: 32px; background: var(--danger-red);
+        .life-system {
+            display: flex;
+            gap: 15px;
+            background: var(--glass);
+            padding: 20px 30px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .heart-icon {
+            width: 35px;
+            height: 35px;
+            background-color: var(--danger);
             clip-path: polygon(50% 15%, 80% 0%, 100% 20%, 100% 50%, 50% 90%, 0% 50%, 0% 20%, 20% 0%);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            filter: drop-shadow(0 0 10px var(--danger-red));
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 15px var(--danger);
         }
 
-        .heart.depleted {
-            background: #222; transform: scale(0.65) rotate(15deg);
-            filter: grayscale(1) drop-shadow(0 0 0px transparent);
+        .heart-icon.lost {
+            background-color: #333;
+            transform: scale(0.6);
+            box-shadow: none;
         }
 
-        /* SCREEN OVERLAYS */
-        .modal {
-            position: absolute; inset: 0; z-index: 500;
-            background: radial-gradient(circle at center, #0a0a20 0%, #010105 100%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        /* MENU OVERLAYS */
+        .full-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, #0a0a25 0%, #020205 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
             pointer-events: all;
         }
 
-        .title-card {
-            font-size: 130px; font-weight: 950; margin: 0;
-            font-style: italic; letter-spacing: -12px;
-            text-shadow: 12px 12px 0px var(--neon-magenta), -6px -6px 0px var(--neon-cyan);
+        .game-title {
+            font-size: 140px;
+            font-weight: 950;
+            margin: 0;
+            letter-spacing: -10px;
+            font-style: italic;
+            text-transform: uppercase;
+            text-shadow: 12px 12px 0px var(--neon-pink), -6px -6px 0px var(--neon-blue);
         }
 
-        .start-btn {
-            margin-top: 70px; padding: 35px 130px;
-            font-size: 38px; font-weight: 900;
-            background: var(--warning-yellow); color: #000;
-            border: none; cursor: pointer;
+        .btn-action {
+            margin-top: 60px;
+            padding: 30px 120px;
+            font-size: 36px;
+            font-weight: 900;
+            background-color: var(--gold);
+            color: black;
+            border: none;
+            cursor: pointer;
             clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
-            transition: 0.3s;
+            transition: all 0.3s;
         }
 
-        .start-btn:hover {
-            transform: scale(1.1) skew(-5deg); background: #fff;
-            box-shadow: 0 0 60px var(--warning-yellow);
+        .btn-action:hover {
+            transform: scale(1.1) rotate(-2deg);
+            background-color: white;
+            box-shadow: 0 0 50px var(--gold);
         }
     </style>
 </head>
 <body>
 
-    <div id="overlay-start" class="modal">
-        <h1 class="title-card">TOP DOWN</h1>
-        <p style="color: rgba(255,255,255,0.3); letter-spacing: 12px; font-weight: bold; margin-top: 5px;">AERIAL PERSPECTIVE V2.1</p>
-        <button class="start-btn" id="launch-trigger">INITIATE SQUAD</button>
+    <div id="screen-start" class="full-overlay">
+        <h1 class="game-title">TITAN RUN</h1>
+        <p style="color: rgba(255,255,255,0.4); letter-spacing: 15px; font-weight: bold;">OMNI-ENGINE v1.0.4</p>
+        <button class="btn-action" id="start-btn">INITIATE</button>
     </div>
 
-    <div id="overlay-death" class="modal" style="display: none;">
-        <h1 class="title-card" style="text-shadow: 0 0 50px var(--danger-red);">TERMINATED</h1>
-        <p id="death-stats" style="font-size: 30px; margin-top: 25px; color: white;"></p>
-        <button class="start-btn" onclick="location.reload()">RE-INITIALIZE</button>
+    <div id="screen-death" class="full-overlay" style="display: none;">
+        <h1 class="game-title" style="text-shadow: 0 0 40px var(--danger);">WASTED</h1>
+        <div id="final-stats" style="font-size: 28px; margin-top: 20px;">DISTANCE: 00000m</div>
+        <button class="btn-action" onclick="location.reload()">REBOOT</button>
     </div>
 
-    <div id="game-interface">
-        <div class="header-section">
-            <div class="vitals-panel" id="hp-bar">
-                <div class="heart"></div><div class="heart"></div><div class="heart"></div>
+    <div id="ui-wrapper">
+        <div class="hud-header">
+            <div class="life-system" id="life-bar">
+                <div class="heart-icon"></div>
+                <div class="heart-icon"></div>
+                <div class="heart-icon"></div>
             </div>
-            <div class="score-container">
-                <div id="score-val">000000</div>
-                <div id="speed-multiplier">X1.0 VELOCITY</div>
+            <div class="stats-group">
+                <div id="score-display">000000</div>
+                <div id="multiplier-tag">X1.0 SPEED</div>
             </div>
         </div>
     </div>
 
-    <canvas id="view-matrix"></canvas>
+    <canvas id="game-canvas"></canvas>
 
 <script>
 /**
- * TITAN BIRD'S-EYE ENGINE (1,000+ LOGIC WEIGHT)
- * ARCHITECTURE: Top-Down Orthographic Projection / Component-Based Simulation
+ * THE OMNI-ENGINE CORE
+ * A strictly structured Game Engine for Subway Surfers logic.
  */
 
 // ---------------------------------------------------------
-// 1. ENGINE CONFIGURATION (Expanded for detail)
+// 1. ENGINE CONFIGURATION & CONSTANTS
 // ---------------------------------------------------------
-const SETTINGS = {
-    LANES: 3,
-    LANE_WIDTH: 140, // Pixel-based width for top-down
-    GRAVITY: 1800,
-    JUMP_HEIGHT: -800,
-    START_SPEED: 800,
-    MAX_SPEED: 2800,
-    ACCELERATION: 12,
-    SHAKE_FRICTION: 0.88,
-    PLAYER_SIZE: 65,
-    TRAIN_SEG_LENGTH: 300,
-    CAMERA_OFFSET_Y: 0.7 // Focuses camera slightly ahead of player
+const CONFIG = {
+    LANE_COUNT: 3,
+    LANE_WIDTH: 1.6,
+    GRAVITY: -65.0,
+    JUMP_IMPULSE: 26.0,
+    HORIZON_HEIGHT: 0.48,
+    FOV: 1.85,
+    START_SPEED: 35.0,
+    MAX_SPEED: 120.0,
+    ACCELERATION: 0.15,
+    SHAKE_DECAY: 0.9,
+    FOG_DENSITY: 0.05
 };
 
 // ---------------------------------------------------------
-// 2. VECTOR MATH & COORDINATE MAPPING
+// 2. MATHEMATICAL 3D PROJECTION UTILITY
 // ---------------------------------------------------------
-class RenderPipeline {
-    constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false });
-        this.w = 0; this.h = 0;
-        this.shake = 0;
-        this.updateBounds();
+class ProjectionMatrix {
+    constructor() {
+        this.w = window.innerWidth;
+        this.h = window.innerHeight;
     }
 
-    updateBounds() {
-        this.w = this.canvas.width = window.innerWidth;
-        this.h = this.canvas.height = window.innerHeight;
+    updateDimensions() {
+        this.w = window.innerWidth;
+        this.h = window.innerHeight;
     }
 
-    // Maps virtual game space to screen space (Top-Down Logic)
-    worldToScreen(x, y, z, scrollZ) {
-        const screenX = (this.w / 2) + x;
-        const screenY = (this.h * SETTINGS.CAMERA_OFFSET_Y) - (z - scrollZ);
+    /**
+     * Projects a 3D world coordinate to 2D screen coordinates.
+     */
+    project(worldX, worldY, worldZ, camZ, shakeAmount) {
+        const relativeZ = worldZ - camZ;
+        if (relativeZ <= 0) return null; // Clipping behind camera
+
+        const scale = CONFIG.FOV / relativeZ;
         
-        // Vertical scale representing "height" (Jump altitude)
-        const altitudeScale = 1 + (y / 1000); 
+        // Perspective Calculation
+        const screenX = (this.w / 2) + (worldX * this.w * 0.5) * scale;
+        const screenY = (this.h * CONFIG.HORIZON_HEIGHT) + 
+                        (this.h * (1 - CONFIG.HORIZON_HEIGHT)) * (1 - scale) - 
+                        (worldY * this.h * 0.5) * scale;
+
+        // Apply dynamic screen shake
+        const offset = (Math.random() - 0.5) * shakeAmount;
 
         return {
-            x: screenX + (Math.random() - 0.5) * this.shake,
-            y: screenY + (Math.random() - 0.5) * this.shake,
-            s: altitudeScale
+            x: screenX + offset,
+            y: screenY + offset,
+            s: scale,
+            z: relativeZ
         };
     }
 }
 
 // ---------------------------------------------------------
-// 3. PLAYER CONTROLLER (Aerial Logic)
+// 3. PLAYER ENTITY CLASS
 // ---------------------------------------------------------
-class PlayerAerial {
+class Player {
     constructor() {
         this.lane = 0; // -1, 0, 1
         this.targetLane = 0;
-        this.x = 0;
-        this.y = 0; // Altitude
-        this.vy = 0;
-        this.rotation = 0;
-        this.width = SETTINGS.PLAYER_SIZE;
+        this.worldX = 0;
+        this.worldY = 0;
+        this.velY = 0;
+        this.leanAngle = 0;
+        this.collisionRadius = 0.4;
+        this.invulnFrames = 0;
     }
 
     update(dt) {
-        // Horizontal Movement
-        const targetX = this.targetLane * SETTINGS.LANE_WIDTH;
-        const dx = targetX - this.x;
-        this.x += dx * 12 * dt;
-        this.rotation = dx * 0.005; // Lean into lanes
+        // Smooth Lane Transition (Interpolation)
+        const targetX = this.targetLane * CONFIG.LANE_WIDTH;
+        const laneDiff = targetX - this.worldX;
+        this.worldX += laneDiff * 15 * dt;
+        
+        // Calculate lean based on movement delta
+        this.leanAngle = laneDiff * 0.4;
 
-        // Vertical Physics (Jumping)
-        if (this.y < 0 || this.vy !== 0) {
-            this.vy += SETTINGS.GRAVITY * dt;
-            this.y += this.vy * dt;
-            if (this.y > 0) { this.y = 0; this.vy = 0; }
+        // Gravity & Jump Physics
+        if (this.worldY > 0 || this.velY !== 0) {
+            this.velY += CONFIG.GRAVITY * dt;
+            this.worldY += this.velY * dt;
+
+            // Grounding check
+            if (this.worldY < 0) {
+                this.worldY = 0;
+                this.velY = 0;
+            }
         }
+
+        if (this.invulnFrames > 0) this.invulnFrames--;
     }
 
-    render(pipeline, scrollZ) {
-        const pos = pipeline.worldToScreen(this.x, this.y, scrollZ + 100, scrollZ);
-        const ctx = pipeline.ctx;
-        const s = pos.s;
+    draw(ctx, matrix, camZ, shake) {
+        const pos = matrix.project(this.worldX, this.worldY, camZ + 0.45, camZ, shake);
+        if (!pos) return;
 
         ctx.save();
         ctx.translate(pos.x, pos.y);
-        ctx.rotate(this.rotation);
-        ctx.scale(s, s);
+        ctx.rotate(this.leanAngle);
 
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.beginPath();
-        ctx.ellipse(0, -this.y * 0.1, 40, 60, 0, 0, Math.PI * 2);
-        ctx.fill();
+        const s = pos.s;
+        
+        // Shadow (pinned to ground)
+        const groundPos = matrix.project(this.worldX, 0, camZ + 0.45, camZ, shake);
+        if (groundPos) {
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(0, (groundPos.y - pos.y), 45 * s, 15 * s, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
-        // Character - Top View (Head and Shoulders)
-        // Backpack
-        ctx.fillStyle = '#111';
-        ctx.fillRect(-25, -20, 50, 40);
-        // Hoodie Body
+        // Procedural Character Rendering
+        // Legs
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(-18*s, -40*s, 14*s, 35*s);
+        ctx.fillRect(4*s, -40*s, 14*s, 35*s);
+        // Jacket
         ctx.fillStyle = '#f97316';
-        ctx.beginPath();
-        ctx.roundRect(-35, -45, 70, 80, 20);
-        ctx.fill();
-        // Cap Brim
+        ctx.fillRect(-22*s, -95*s, 44*s, 60*s);
+        // Head
+        ctx.fillStyle = '#ffdbac';
+        ctx.fillRect(-14*s, -125*s, 28*s, 32*s);
+        // Cap
         ctx.fillStyle = '#111';
-        ctx.fillRect(-20, -55, 40, 15);
-        // Head (Top of cap)
-        ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(0, -35, 22, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(-18*s, -130*s, 36*s, 10*s);
+        ctx.fillRect(0, -130*s, 25*s, 5*s);
 
         ctx.restore();
     }
 }
 
 // ---------------------------------------------------------
-// 4. OBSTACLE ENGINE (Trains and Barriers)
+// 4. OBSTACLE (TRAIN) CLASS
 // ---------------------------------------------------------
-class TrainAerial {
+class Train {
     constructor(lane, startZ) {
         this.lane = lane;
         this.z = startZ;
-        this.segments = 4 + Math.floor(Math.random() * 6);
-        this.color = `hsl(${200 + Math.random() * 40}, 80%, 30%)`;
-        this.id = Math.random();
+        this.length = 4 + Math.floor(Math.random() * 6);
+        this.type = Math.random() > 0.3 ? 'TRAIN' : 'BARRIER';
+        this.color = `hsl(${200 + Math.random()*40}, 70%, 30%)`;
     }
 
-    render(pipeline, scrollZ) {
-        const ctx = pipeline.ctx;
-        const x = this.lane * SETTINGS.LANE_WIDTH;
-        const width = SETTINGS.LANE_WIDTH * 0.85;
-        const fullLength = this.segments * SETTINGS.TRAIN_SEG_LENGTH;
-
-        const pos = pipeline.worldToScreen(x, 0, this.z, scrollZ);
+    draw(ctx, matrix, camZ, shake) {
+        // Render each segment of the train
+        const segments = this.type === 'TRAIN' ? this.length : 1;
         
-        // Cull if off screen
-        if (pos.y > pipeline.h + fullLength || pos.y < -1000) return;
+        for (let i = 0; i < segments; i++) {
+            const segZ = this.z + (i * 2.5);
+            const pos = matrix.project(this.lane * CONFIG.LANE_WIDTH, 0, segZ, camZ, shake);
+            
+            if (!pos || pos.z > 80) continue;
 
-        ctx.save();
-        ctx.translate(pos.x, pos.y);
+            const w = 340 * pos.s;
+            const h = (this.type === 'TRAIN' ? 400 : 80) * pos.s;
 
-        // Train Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.fillRect(-width/2 + 15, 15, width, fullLength);
+            // Box Gradient
+            const grad = ctx.createLinearGradient(pos.x - w/2, 0, pos.x + w/2, 0);
+            grad.addColorStop(0, '#020617');
+            grad.addColorStop(0.5, this.color);
+            grad.addColorStop(1, '#020617');
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(pos.x - w/2, pos.y - h, w, h);
 
-        // Main Body
-        const grad = ctx.createLinearGradient(-width/2, 0, width/2, 0);
-        grad.addColorStop(0, '#020617');
-        grad.addColorStop(0.5, this.color);
-        grad.addColorStop(1, '#020617');
-        ctx.fillStyle = grad;
-        ctx.fillRect(-width/2, 0, width, fullLength);
-
-        // Roof Details (A/C Units, Vents)
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        for(let i=0; i<this.segments; i++) {
-            const segY = i * SETTINGS.TRAIN_SEG_LENGTH;
-            // Vent panel
-            ctx.fillRect(-width/4, segY + 50, width/2, 100);
-            // Connectors
-            ctx.fillStyle = '#111';
-            ctx.fillRect(-width/2, segY - 10, width, 20);
+            // Lighting/Edge Detail
+            ctx.strokeStyle = i === 0 ? 'var(--neon-blue)' : 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = Math.max(1, 3 * pos.s);
+            ctx.strokeRect(pos.x - w/2, pos.y - h, w, h);
         }
-
-        // Outline
-        ctx.strokeStyle = 'var(--neon-cyan)';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(-width/2, 0, width, fullLength);
-
-        ctx.restore();
     }
 }
 
 // ---------------------------------------------------------
-// 5. OMNI-ENGINE CORE (The Controller)
+// 5. WORLD & ENGINE CONTROLLER
 // ---------------------------------------------------------
-class GameEngine {
+class OmniEngine {
     constructor() {
-        this.pipeline = new RenderPipeline(document.getElementById('view-matrix'));
-        this.player = new PlayerAerial();
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d', { alpha: false });
+        this.matrix = new ProjectionMatrix();
+        this.player = new Player();
         
-        this.scrollZ = 0;
-        this.speed = SETTINGS.START_SPEED;
+        this.distance = 0;
+        this.speed = CONFIG.START_SPEED;
         this.score = 0;
         this.hp = 3;
-        this.isRunning = false;
+        this.shake = 0;
+        
+        this.obstacles = [];
+        this.decorations = [];
+        this.running = false;
         this.lastTime = 0;
-
-        this.entities = [];
-        this.bgNodes = [];
     }
 
     init() {
-        window.addEventListener('resize', () => this.pipeline.updateBounds());
-        this.setupInput();
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.setupControls();
         
-        // Generate Parallax Background (Rails/Gravel)
-        for(let i=0; i<50; i++) {
-            this.bgNodes.push({ z: i * 200, type: i % 5 === 0 ? 'SLEEPER' : 'GRAVEL' });
+        // Generate initial city decorations
+        for(let i=0; i<100; i++) {
+            this.decorations.push({
+                x: i % 2 === 0 ? -7 : 7,
+                z: i * 5,
+                height: 15 + Math.random() * 30,
+                hue: 200 + Math.random() * 50
+            });
         }
-
-        document.getElementById('launch-trigger').addEventListener('click', () => this.start());
     }
 
-    setupInput() {
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.matrix.updateDimensions();
+    }
+
+    setupControls() {
         window.addEventListener('keydown', (e) => {
-            if (!this.isRunning) return;
+            if (!this.running) return;
             if (e.key === 'ArrowLeft') this.player.targetLane = Math.max(-1, this.player.targetLane - 1);
             if (e.key === 'ArrowRight') this.player.targetLane = Math.min(1, this.player.targetLane + 1);
-            if ((e.key === 'ArrowUp' || e.key === ' ') && this.player.y === 0) {
-                this.player.vy = SETTINGS.JUMP_HEIGHT;
+            if ((e.key === 'ArrowUp' || e.key === ' ') && this.player.worldY === 0) {
+                this.player.velY = CONFIG.JUMP_IMPULSE;
             }
         });
     }
 
-    start() {
-        document.getElementById('overlay-start').style.display = 'none';
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        requestAnimationFrame((t) => this.mainLoop(t));
-    }
-
-    spawnLogic() {
-        if (this.entities.length < 10) {
-            const lastZ = this.entities.length ? this.entities[this.entities.length - 1].z : this.scrollZ;
-            const spawnZ = lastZ - (1500 + Math.random() * 2000);
-            this.entities.push(new TrainAerial(Math.floor(Math.random()*3)-1, spawnZ));
-        }
-    }
-
-    handleCollision() {
-        this.hp--;
-        this.pipeline.shake = 45;
-        
-        const hearts = document.querySelectorAll('.heart');
-        if (hearts[this.hp]) hearts[this.hp].classList.add('depleted');
-
-        if (this.hp <= 0) {
-            this.isRunning = false;
-            document.getElementById('overlay-death').style.display = 'flex';
-            document.getElementById('death-stats').innerText = `DISTANCE COVERED: ${Math.floor(this.score)} UNITS`;
+    spawnObstacles() {
+        if (this.obstacles.length < 12) {
+            const lastZ = this.obstacles.length ? this.obstacles[this.obstacles.length - 1].z : this.distance;
+            const newZ = lastZ + 18 + Math.random() * 20;
+            const lane = Math.floor(Math.random() * 3) - 1;
+            this.obstacles.push(new Train(lane, newZ));
         }
     }
 
     update(dt) {
-        if (!this.isRunning) return;
+        if (!this.running) return;
 
-        // Velocity Physics
-        this.speed = Math.min(SETTINGS.MAX_SPEED, this.speed + SETTINGS.ACCELERATION * dt);
-        this.scrollZ -= this.speed * dt;
-        this.score += (this.speed * 0.01) * dt * 10;
-        this.pipeline.shake *= SETTINGS.SHAKE_FRICTION;
+        // Progressive Difficulty
+        this.speed = Math.min(CONFIG.MAX_SPEED, this.speed + CONFIG.ACCELERATION * dt);
+        this.distance += this.speed * dt;
+        this.score += (this.speed * 0.1) * dt * 100;
+        this.shake *= CONFIG.SHAKE_DECAY;
 
         this.player.update(dt);
-        this.spawnLogic();
+        this.spawnObstacles();
 
-        // Entity Processing
-        this.entities = this.entities.filter(ent => {
-            const screenY = this.pipeline.worldToScreen(0, 0, ent.z, this.scrollZ).y;
-            const fullLen = ent.segments * SETTINGS.TRAIN_SEG_LENGTH;
+        // Collision Logic
+        this.obstacles = this.obstacles.filter(obs => {
+            const relZ = obs.z - this.distance;
+            const trainLength = obs.type === 'TRAIN' ? obs.length * 2.5 : 1.0;
 
-            // Collision check (Top-Down AABB)
-            if (ent.lane === this.player.targetLane) {
-                const playerZ = this.scrollZ - 100;
-                if (playerZ < ent.z && playerZ > ent.z - fullLen) {
-                    // Only collide if player is below a certain height
-                    if (this.player.y > -150) { 
-                        this.handleCollision();
-                        return false; 
-                    }
+            // Check if player is within the bounds of this obstacle
+            if (relZ < 0.2 && relZ > -trainLength && Math.abs(obs.lane - this.player.targetLane) < 0.2) {
+                const threshold = obs.type === 'TRAIN' ? 1.2 : 0.6;
+                if (this.player.worldY < threshold) {
+                    this.onHit();
+                    return false; // Remove obstacle on impact
                 }
             }
-            return screenY < this.pipeline.h + 2000; // Cleanup
+            return relZ > -30; // Cleanup distant objects
         });
 
-        // Update HUD
-        document.getElementById('score-val').innerText = Math.floor(this.score).toString().padStart(6, '0');
-        document.getElementById('speed-multiplier').innerText = `X${(this.speed / SETTINGS.START_SPEED).toFixed(1)} VELOCITY`;
+        this.updateHUD();
     }
 
-    render() {
-        const ctx = this.pipeline.ctx;
-        ctx.fillStyle = '#020208';
-        ctx.fillRect(0, 0, this.pipeline.w, this.pipeline.h);
+    onHit() {
+        this.hp--;
+        this.shake = 40;
+        
+        // Visual feedback
+        const hearts = document.querySelectorAll('.heart-icon');
+        if (hearts[this.hp]) hearts[this.hp].classList.add('lost');
 
-        // 1. Draw Environment (Tracks)
-        ctx.strokeStyle = '#1e1b4b';
-        ctx.lineWidth = 15;
-        [-1, 0, 1].forEach(l => {
-            const x = l * SETTINGS.LANE_WIDTH + (this.pipeline.w/2);
-            ctx.beginPath();
-            ctx.moveTo(x, 0); ctx.lineTo(x, this.pipeline.h);
-            ctx.stroke();
+        if (this.hp <= 0) {
+            this.running = false;
+            document.getElementById('screen-death').style.display = 'flex';
+            document.getElementById('final-stats').innerText = `DISTANCE: ${Math.floor(this.distance)}m`;
+        }
+    }
+
+    updateHUD() {
+        document.getElementById('score-display').innerText = Math.floor(this.score).toString().padStart(6, '0');
+        document.getElementById('multiplier-tag').innerText = `X${(this.speed / CONFIG.START_SPEED).toFixed(1)} SPEED`;
+    }
+
+    draw() {
+        // Clear frame
+        this.ctx.fillStyle = '#010105';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw Ground Mesh
+        this.ctx.strokeStyle = '#1e1b4b';
+        this.ctx.lineWidth = 1;
+        for(let i=0; i<35; i++) {
+            const z = Math.floor(this.distance) + i;
+            const pL = this.matrix.project(-2.5, 0, z, this.distance, this.shake);
+            const pR = this.matrix.project(2.5, 0, z, this.distance, this.shake);
+            if (pL && pR) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(pL.x, pL.y);
+                this.ctx.lineTo(pR.x, pR.y);
+                this.ctx.stroke();
+            }
+        }
+
+        // Draw World Decoration (Buildings)
+        this.decorations.forEach(d => {
+            let dz = d.z;
+            while (dz < this.distance) dz += 500; // Loop decor
+            
+            const p = this.matrix.project(d.x, 0, dz, this.distance, this.shake);
+            if (!p || p.z > 120) return;
+
+            this.ctx.fillStyle = `hsla(${d.hue}, 50%, 10%, ${1.0 - p.z/120})`;
+            const bw = 800 * p.s;
+            const bh = d.height * 100 * p.s;
+            this.ctx.fillRect(p.x - bw/2, p.y - bh, bw, bh);
         });
 
-        // 2. Draw Entities (Sorted for overlap)
-        this.entities.forEach(ent => ent.render(this.pipeline, this.scrollZ));
+        // Depth Sorting: Sort obstacles so furthest are drawn first
+        this.obstacles.sort((a, b) => b.z - a.z);
+        this.obstacles.forEach(obs => obs.draw(this.ctx, this.matrix, this.distance, this.shake));
 
-        // 3. Draw Player
-        this.player.render(this.pipeline, this.scrollZ);
+        // Draw Player
+        this.player.draw(this.ctx, this.matrix, this.distance, this.shake);
     }
 
-    mainLoop(timestamp) {
+    loop(timestamp) {
         const dt = (timestamp - this.lastTime) / 1000;
         this.lastTime = timestamp;
 
-        if (dt < 0.1) {
+        if (dt < 0.1) { // Prevents massive jumps on tab focus
             this.update(dt);
-            this.render();
+            this.draw();
         }
-        requestAnimationFrame((t) => this.mainLoop(t));
+        requestAnimationFrame((t) => this.loop(t));
+    }
+
+    start() {
+        document.getElementById('screen-start').style.display = 'none';
+        this.running = true;
+        this.lastTime = performance.now();
+        requestAnimationFrame((t) => this.loop(t));
     }
 }
 
 // ---------------------------------------------------------
-// 6. INITIALIZATION BOOTSTRAP
+// 6. ENGINE BOOTSTRAP
 // ---------------------------------------------------------
-const App = new GameEngine();
-App.init();
+const Game = new OmniEngine();
+Game.init();
+
+document.getElementById('start-btn').addEventListener('click', () => {
+    Game.start();
+});
 
 </script>
 </body>
