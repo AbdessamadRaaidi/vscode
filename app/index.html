@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Savings Tracker Pro</title>
+    <title>Savings Tracker MAD</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="bg-overlay"></div>
+
     <div class="app-card">
         <header>
             <h1>My Savings</h1>
@@ -16,7 +17,9 @@
         </header>
 
         <div class="progress-section">
-            <div class="progress-bar-bg"><div id="progressFill" class="progress-fill"></div></div>
+            <div class="progress-bar-bg">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
             <div class="progress-labels">
                 <span id="progressText">0%</span>
                 <span id="displayRemaining">0 MAD left</span>
@@ -30,17 +33,6 @@
 
         <div class="chart-container">
             <canvas id="savingsChart"></canvas>
-        </div>
-
-        <div class="calendar-container">
-            <div class="calendar-nav">
-                <select id="monthSelect" onchange="renderCalendar()"></select>
-                <select id="yearSelect" onchange="renderCalendar()"></select>
-            </div>
-            <div class="calendar-days-header">
-                <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-            </div>
-            <div class="calendar-grid" id="calendarGrid"></div>
         </div>
 
         <div class="action-area">
@@ -58,13 +50,24 @@
             </div>
         </div>
 
+        <!-- CALENDAR -->
+        <div class="calendar-section">
+            <div class="calendar-header">
+                <button class="cal-nav-btn" onclick="changeMonth(-1)">&#8249;</button>
+                <span id="calTitle" class="cal-title"></span>
+                <button class="cal-nav-btn" onclick="changeMonth(1)">&#8250;</button>
+            </div>
+            <div class="cal-day-names" id="calDayNames"></div>
+            <div class="cal-grid" id="calGrid"></div>
+        </div>
+
         <div class="history">
             <h3>Recent Activity</h3>
             <ul id="historyList"></ul>
             <button onclick="clearAll()" class="clear-btn">Reset All Data</button>
         </div>
     </div>
-    <div id="undoToast"></div>
+
     <script src="script.js"></script>
 </body>
 </html>
