@@ -111,10 +111,12 @@ function initChart() {
                 backgroundColor: 'rgba(56,189,248,0.08)',
                 borderWidth: 2,
                 fill: true,
-                tension: 0.4,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                pointBackgroundColor: '#38bdf8',
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: [],
+                pointBorderColor: [],
+                pointBorderWidth: 2,
                 spanGaps: false
             }]
         },
@@ -128,7 +130,15 @@ function initChart() {
                     enabled: true,
                     callbacks: {
                         title: ctx => ctx[0].label,
-                        label: ctx => ' ' + ctx.parsed.y.toLocaleString() + ' MAD'
+                        label: ctx => {
+                            const raw = ctx.raw;
+                            const delta = raw._delta;
+                            const sign = delta > 0 ? '+' : '';
+                            return [
+                                ' Balance: ' + raw.y.toLocaleString() + ' MAD',
+                                ' Change:  ' + sign + delta.toLocaleString() + ' MAD'
+                            ];
+                        }
                     }
                 }
             },
@@ -138,7 +148,7 @@ function initChart() {
                     ticks: {
                         color: '#64748b',
                         font: { size: 9 },
-                        maxTicksLimit: 12,
+                        maxTicksLimit: 14,
                         maxRotation: 0,
                         autoSkip: true
                     },
@@ -162,38 +172,50 @@ function initChart() {
 function updateChart() {
     if (!savingsChart) return;
 
-    const todayISO = localISO();
-    const { snapshots, allDates } = buildDayMaps();
+    // Build per-transaction points, sorted oldest→newest
+    const sorted = [...history].reverse(); // history is newest-first, so reverse = oldest-first
 
-    // Always show all time: from earliest transaction to today
-    const fromISO = allDates.length > 0 ? allDates[0] : todayISO;
-    const days = dayRange(fromISO, todayISO);
+    // Recompute running balance for each transaction from scratch
+    // We know the final total; walk forward computing balance after each tx
+    // sorted[0] is oldest. balance after sorted[i] = sum of sorted[0..i].val
+    // But total = sum of all, so balance after sorted[i] = total - sum of sorted[i+1..end].val
+    // Easier: just accumulate forward from 0
+    let running = 0;
+    const points = sorted.map(item => {
+        running += item.val;
+        return { val: item.val, balance: running, item };
+    });
+
+    // Correction: running may differ from total due to floating point or deleted items
+    // Rescale so last point = total
+    if (points.length > 0) {
+        const diff = total - points[points.length - 1].balance;
+        if (Math.abs(diff) > 0.001) {
+            points[points.length - 1].balance = total;
+        }
+    }
 
     const labels = [];
-    const data   = [];
+    const data = [];
+    const pointColors = [];
+    const pointBorderColors = [];
 
-    const sortedSnaps = allDates
-        .filter(d => snapshots[d] !== undefined)
-        .map(d => [d, snapshots[d]]);
-
-    let snapIdx = 0;
-    let lastSnap = null;
-
-    days.forEach(d => {
-        const dt = new Date(d + 'T00:00:00');
+    points.forEach(p => {
+        const dt = new Date((p.item.isoDate || localISO()) + 'T00:00:00');
         labels.push(dt.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' }));
-
-        while (snapIdx < sortedSnaps.length && sortedSnaps[snapIdx][0] <= d) {
-            lastSnap = sortedSnaps[snapIdx][1];
-            snapIdx++;
-        }
-
-        data.push(snapshots[d] !== undefined ? snapshots[d] : lastSnap);
+        const color = p.val >= 0 ? '#10b981' : '#ef4444';
+        pointColors.push(color);
+        pointBorderColors.push(color);
+        // Attach delta to data point for tooltip
+        data.push({ x: labels[labels.length - 1], y: p.balance, _delta: p.val });
     });
 
     savingsChart.data.labels = labels;
     savingsChart.data.datasets[0].data = data;
+    savingsChart.data.datasets[0].pointBackgroundColor = pointColors;
+    savingsChart.data.datasets[0].pointBorderColor = pointBorderColors;
     savingsChart.options.scales.y.max = goal > 0 ? goal : undefined;
+    savingsChart.options.parsing = { xAxisKey: 'x', yAxisKey: 'y' };
     savingsChart.update();
 }
 
@@ -335,22 +357,41 @@ function renderCalendar() {
         const snap    = snapshots[iso];
         const delta   = dayDeltas[iso];
 
+        // Determine color class based on delta
+        let colorClass = '';
+        if (delta !== undefined) {
+            colorClass = delta >= 0 ? ' has-add' : ' has-sub';
+        }
+
         let snapHtml = '', deltaHtml = '';
         if (snap !== undefined) {
             const cls = snap > 0 ? 'pos' : snap < 0 ? 'neg' : 'zero';
-            snapHtml = `<div class="cal-snap ${cls}">${Math.round(snap)}</div>`;
+            snapHtml = `<div class="cal-snap ${cls}">${Math.round(snap).toLocaleString()}</div>`;
         }
         if (delta !== undefined) {
             const cls  = delta >= 0 ? 'delta-pos' : 'delta-neg';
             const sign = delta > 0 ? '+' : '';
-            deltaHtml = `<div class="cal-delta ${cls}">${sign}${Math.round(delta)}</div>`;
+            deltaHtml = `<div class="cal-delta ${cls}">${sign}${Math.round(delta).toLocaleString()}</div>`;
         }
 
-        html += `<div class="cal-cell${isToday ? ' today' : ''}">
+        html += `<div class="cal-cell${isToday ? ' today' : ''}${colorClass}" onclick="onCalCellClick('${iso}', this)" title="${iso}">
             <div class="cal-num">${d}</div>
             ${snapHtml}${deltaHtml}
         </div>`;
     }
 
     document.getElementById('calGrid').innerHTML = html;
+}
+
+let selectedCalISO = null;
+
+function onCalCellClick(iso, el) {
+    // Deselect previous
+    document.querySelectorAll('.cal-cell.selected').forEach(c => c.classList.remove('selected'));
+    if (selectedCalISO === iso) {
+        selectedCalISO = null;
+        return;
+    }
+    selectedCalISO = iso;
+    el.classList.add('selected');
 }
