@@ -9,48 +9,61 @@ body {
     min-height: 100vh; margin: 0; padding: 20px 0; overflow-x: hidden;
 }
 
-#bg-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; opacity: 0; }
+#bg-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; }
 .burst-add { background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%); animation: burstFade 0.7s; }
 .burst-sub { background: radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 70%); animation: burstFade 0.7s; }
 @keyframes burstFade { 0% { opacity: 0; transform: scale(0.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.4); } }
 
-.app-card { background: var(--card); padding: 1.5rem; border-radius: 24px; width: 380px; border: 1px solid rgba(255, 255, 255, 0.1); }
+.app-card { background: var(--card); padding: 1.5rem; border-radius: 24px; width: 380px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
 
 h1 { margin: 0; font-size: 1.2rem; text-align: center; }
-.total-display { text-align: center; margin: 1rem 0; background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 15px; }
-.total-display h2 { font-size: 2rem; margin: 0; color: #38bdf8; }
+.total-display { text-align: center; margin: 1rem 0; background: rgba(0,0,0,0.3); padding: 0.8rem; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
+.total-display h2 { font-size: 2.2rem; margin: 0; color: #38bdf8; }
 
-.chart-container { height: 100px; margin-bottom: 15px; }
+.chart-container { height: 120px; margin-bottom: 15px; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 5px; }
 
-/* CALENDAR STYLES */
-.calendar-container { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 15px; margin-bottom: 15px; }
+.calendar-container { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
 .calendar-nav { display: flex; gap: 5px; margin-bottom: 10px; }
-.calendar-nav select { background: #0f172a; color: white; border: 1px solid #334155; padding: 5px; border-radius: 5px; flex: 1; font-size: 0.8rem; }
-.calendar-days-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.6rem; color: #64748b; margin-bottom: 5px; }
+.calendar-nav select { background: #0f172a; color: white; border: 1px solid #334155; padding: 5px; border-radius: 5px; flex: 1; font-size: 0.8rem; outline: none; }
+.calendar-days-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.65rem; color: #64748b; margin-bottom: 5px; font-weight: bold; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 
 .cal-day { 
     aspect-ratio: 1/1.1; background: rgba(255,255,255,0.03); border-radius: 4px; 
     display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-    padding: 3px; font-size: 0.65rem; border: 1px solid transparent;
+    padding: 3px; font-size: 0.65rem; border: 1px solid transparent; transition: 0.2s;
 }
 .cal-day.today { border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
-.cal-day span { font-weight: bold; opacity: 0.6; } /* Day number */
-.cal-day .net { font-size: 0.5rem; font-weight: bold; } /* +/- amount */
+.cal-day span { font-weight: bold; opacity: 0.5; }
+.cal-day .net { font-size: 0.5rem; font-weight: bold; }
 .cal-day .net.pos { color: var(--success); }
 .cal-day .net.neg { color: var(--danger); }
-.cal-day .day-total { font-size: 0.55rem; color: #38bdf8; border-top: 1px solid rgba(255,255,255,0.1); width: 100%; text-align: center; padding-top: 1px; }
+.cal-day .day-total { font-size: 0.55rem; color: #38bdf8; width: 100%; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }
 
-/* REUSED APP STYLES */
-.progress-bar-bg { background: #334155; height: 8px; border-radius: 10px; overflow: hidden; }
-.progress-fill { background: linear-gradient(90deg, #38bdf8, #2563eb); height: 100%; width: 0%; transition: 0.5s; }
-.progress-labels { display: flex; justify-content: space-between; font-size: 0.7rem; margin: 5px 0; color: #94a3b8; }
-input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 8px; }
-.btn-group { display: flex; gap: 10px; }
-.add-btn, .sub-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.progress-bar-bg { background: #334155; height: 10px; border-radius: 10px; overflow: hidden; }
+.progress-fill { background: linear-gradient(90deg, #38bdf8, #2563eb); height: 100%; width: 0%; transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.progress-labels { display: flex; justify-content: space-between; font-size: 0.75rem; margin: 8px 0; color: #94a3b8; }
+
+input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; box-sizing: border-box; outline: none; }
+input:focus { border-color: #38bdf8; }
+.btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+.add-btn, .sub-btn { flex: 1; padding: 14px; border-radius: 10px; border: none; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
 .add-btn { background: var(--success); } .sub-btn { background: var(--danger); }
-.goal-btn { background: #475569; border: none; color: white; padding: 10px; border-radius: 8px; cursor: pointer; }
-.history { margin-top: 15px; }
-ul { list-style: none; padding: 0; max-height: 80px; overflow-y: auto; font-size: 0.8rem; }
-li { padding: 5px 0; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; }
-.clear-btn { width: 100%; background: none; border: 1px solid var(--danger); color: var(--danger); padding: 5px; margin-top: 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; }
+.add-btn:active, .sub-btn:active { transform: scale(0.95); }
+
+.goal-input-group { display: flex; gap: 8px; align-items: center; }
+.goal-input-group input { margin-bottom: 0; flex: 2; }
+.goal-btn { flex: 1; background: #475569; border: none; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
+.history { margin-top: 20px; }
+ul { list-style: none; padding: 0; max-height: 100px; overflow-y: auto; }
+li { padding: 8px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+.delete-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; }
+
+#undoToast {
+    visibility: hidden; min-width: 200px; background-color: #1e293b; color: #fff; text-align: center;
+    border-radius: 10px; padding: 12px; position: fixed; z-index: 100; left: 50%; bottom: 30px;
+    transform: translateX(-50%); border: 1px solid #38bdf8; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+#undoToast.show { visibility: visible; animation: fadein 0.5s; }
+@keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
