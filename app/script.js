@@ -60,6 +60,13 @@ function updateChart() {
     savingsChart.update();
 }
 
+// HELPER: Convert DD/MM/YYYY string to a proper Date object safely
+function parseHistoryDate(dateStr) {
+    const parts = dateStr.split('/');
+    // Format: Day, Month (0-indexed), Year
+    return new Date(parts[2], parts[1] - 1, parts[0]);
+}
+
 function renderCalendar() {
     const grid = document.getElementById("calendarGrid");
     const month = parseInt(document.getElementById("monthSelect").value);
@@ -69,16 +76,15 @@ function renderCalendar() {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
-    const todayStr = now.toLocaleDateString('fr-MA');
+    // Normalize "now" to midnight for fair comparisons
+    const todayNormalized = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Create a map of NET changes per day
     const dayNetMap = {};
     history.forEach(h => {
         if (!dayNetMap[h.date]) dayNetMap[h.date] = 0;
         dayNetMap[h.date] += h.val;
     });
 
-    // To get the balance for ANY day, we start from the current total and walk backward
     const padding = firstDay === 0 ? 6 : firstDay - 1;
     for (let p = 0; p < padding; p++) grid.appendChild(document.createElement("div"));
 
@@ -89,20 +95,21 @@ function renderCalendar() {
         let displayBalance = "";
         let netHtml = "";
 
-        if (dateObj <= now) {
-            // Calculate balance at the END of this specific day
-            let balAtDate = total;
-            // Subtract all transactions that happened AFTER this date
+        if (dateObj <= todayNormalized) {
+            // Start with the CURRENT TOTAL and go backwards
+            let balAtEndOfDay = total;
+            
             history.forEach(h => {
-                const hDateParts = h.date.split('/');
-                const hDateObj = new Date(hDateParts[2], hDateParts[1] - 1, hDateParts[0]);
-                if (hDateObj > dateObj) {
-                    balAtDate -= h.val;
+                const histDate = parseHistoryDate(h.date);
+                // If the history item happened strictly AFTER the day we are rendering,
+                // we "undo" that transaction from the current total to see what the balance was back then.
+                if (histDate > dateObj) {
+                    balAtEndOfDay -= h.val;
                 }
             });
-            displayBalance = Math.round(balAtDate);
+            
+            displayBalance = Math.round(balAtEndOfDay);
 
-            // Add the net change indicator (+/-) if something happened today
             const net = dayNetMap[dateStr] || 0;
             if (net !== 0) {
                 netHtml = `<div class="net ${net > 0 ? 'pos' : 'neg'}">${net > 0 ? '+' : ''}${net}</div>`;
@@ -110,7 +117,7 @@ function renderCalendar() {
         }
 
         const dayEl = document.createElement("div");
-        dayEl.className = "cal-day" + (dateStr === todayStr ? " today" : "");
+        dayEl.className = "cal-day" + (dateStr === todayNormalized.toLocaleDateString('fr-MA') ? " today" : "");
         dayEl.innerHTML = `<span>${d}</span>${netHtml}<div class="day-total">${displayBalance}</div>`;
         grid.appendChild(dayEl);
     }
@@ -122,8 +129,11 @@ function modifySavings(type) {
     if (isNaN(amount) || amount <= 0) return;
     const change = type === 'add' ? amount : -amount;
     total += change;
-    const dateStr = new Date().toLocaleDateString('fr-MA');
+    
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('fr-MA');
     history.unshift({ text: `${type === 'add' ? '+' : '-'} ${amount} MAD`, val: change, date: dateStr });
+    
     input.value = "";
     saveData();
     updateUI();
@@ -163,9 +173,11 @@ function updateUI() {
     const percent = goal > 0 ? (total / goal) * 100 : 0;
     document.getElementById("progressFill").style.width = `${Math.min(percent, 100)}%`;
     document.getElementById("progressText").innerText = `${Math.round(percent)}%`;
+    
     document.getElementById("historyList").innerHTML = history.slice(0, 10).map((item, i) => `
         <li><span>${item.text} (${item.date})</span><button class="delete-btn" onclick="deleteTransaction(${i})">×</button></li>
     `).join("");
+    
     updateChart();
     renderCalendar();
 }
