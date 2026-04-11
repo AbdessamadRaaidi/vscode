@@ -68,7 +68,16 @@
 
         <!-- CENTER PANEL: Chart + Calendar -->
         <div class="panel panel-center">
-            <div class="section-title">Savings History</div>
+            <div class="chart-header">
+                <div class="section-title" style="margin-bottom:0;">Savings History</div>
+                <div class="period-btns">
+                    <button class="period-btn active" data-days="7">7D</button>
+                    <button class="period-btn" data-days="30">30D</button>
+                    <button class="period-btn" data-days="90">90D</button>
+                    <button class="period-btn" data-days="365">1Y</button>
+                    <button class="period-btn" data-days="0">All</button>
+                </div>
+            </div>
             <div class="chart-container">
                 <canvas id="savingsChart"></canvas>
             </div>

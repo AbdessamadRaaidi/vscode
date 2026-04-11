@@ -3,6 +3,7 @@ let goal = parseFloat(localStorage.getItem("savings_goal")) || 0;
 let history = JSON.parse(localStorage.getItem("savings_history")) || [];
 let lastDeleted = null;
 let savingsChart;
+let chartPeriodDays = 7; // default period
 
 // Calendar state
 let calYear, calMonth;
@@ -16,6 +17,17 @@ window.onload = () => {
     } : item);
     initChart();
     renderCalDayNames();
+
+    // Wire period buttons
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            chartPeriodDays = parseInt(btn.dataset.days);
+            updateChart();
+        });
+    });
+
     updateUI();
 };
 
@@ -32,8 +44,9 @@ function initChart() {
                 borderWidth: 2,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 4,
-                pointBackgroundColor: '#38bdf8'
+                pointRadius: 3,
+                pointBackgroundColor: '#38bdf8',
+                spanGaps: true
             }]
         },
         options: {
@@ -44,7 +57,16 @@ function initChart() {
                 tooltip: { enabled: true, callbacks: { label: (c) => c.parsed.y + ' MAD' } }
             },
             scales: {
-                x: { display: false },
+                x: {
+                    display: true,
+                    ticks: {
+                        color: '#64748b',
+                        font: { size: 9 },
+                        maxTicksLimit: 8,
+                        maxRotation: 0
+                    },
+                    grid: { display: false }
+                },
                 y: { 
                     beginAtZero: true,
                     max: goal > 0 ? goal : undefined,
@@ -56,19 +78,83 @@ function initChart() {
     });
 }
 
+function getISOFromItem(item) {
+    if (item.isoDate) return item.isoDate;
+    if (item.date) {
+        const parts = item.date.split(/[\/ ]/);
+        if (parts.length >= 2) {
+            const day   = parts[0].padStart(2, '0');
+            const month = parts[1].padStart(2, '0');
+            const year  = parts[2] && parts[2].length === 4 ? parts[2] : new Date().getFullYear();
+            return `${year}-${month}-${day}`;
+        }
+    }
+    return new Date().toISOString().slice(0, 10);
+}
+
 function updateChart() {
     if (!savingsChart) return;
-    let runningTotal = total;
-    let chartData = [total];
-    let chartLabels = ["Now"];
+
+    const todayISO = new Date().toISOString().slice(0, 10);
+
+    // Build daily delta map for ALL history
+    const dayDeltas = {};
     history.forEach(item => {
-        runningTotal -= item.val;
-        chartData.unshift(runningTotal);
-        chartLabels.unshift(item.date);
+        const iso = getISOFromItem(item);
+        dayDeltas[iso] = (dayDeltas[iso] || 0) + item.val;
     });
-    savingsChart.data.labels = chartLabels;
-    savingsChart.data.datasets[0].data = chartData;
+
+    // Find earliest date across all history
+    const allHistDates = Object.keys(dayDeltas).sort();
+    const earliestISO  = allHistDates[0] || todayISO;
+
+    // Determine window start
+    let windowStart;
+    if (chartPeriodDays === 0) {
+        windowStart = earliestISO; // All
+    } else {
+        const d = new Date();
+        d.setDate(d.getDate() - (chartPeriodDays - 1));
+        windowStart = d.toISOString().slice(0, 10);
+    }
+
+    // Build full list of days from windowStart → today
+    const days = [];
+    const cur = new Date(windowStart);
+    const end = new Date(todayISO);
+    while (cur <= end) {
+        days.push(cur.toISOString().slice(0, 10));
+        cur.setDate(cur.getDate() + 1);
+    }
+
+    // Reconstruct balance for each day in window
+    // snapshot(d) = total - sum of vals on days AFTER d
+    const allDates = Object.keys(dayDeltas).sort();
+
+    const labels = [];
+    const data   = [];
+
+    days.forEach(d => {
+        let snap = total;
+        allDates.forEach(d2 => { if (d2 > d) snap -= dayDeltas[d2]; });
+        // Only include days that are at or after the earliest transaction,
+        // or today (so the line always ends at present)
+        if (d >= earliestISO || d === todayISO) {
+            // Format label
+            const dt = new Date(d);
+            const label = dt.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' });
+            labels.push(label);
+            data.push(snap);
+        } else {
+            labels.push('');
+            data.push(null);
+        }
+    });
+
+    savingsChart.data.labels = labels;
+    savingsChart.data.datasets[0].data = data;
     savingsChart.options.scales.y.max = goal > 0 ? goal : undefined;
+    savingsChart.options.scales.x.display = days.length <= 60;
     savingsChart.update();
 }
 
