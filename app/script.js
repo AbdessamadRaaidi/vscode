@@ -65,6 +65,50 @@ function updateChart() {
     savingsChart.update();
 }
 
+function renderCalendar() {
+    const grid = document.getElementById("calendarGrid");
+    const monthLabel = document.getElementById("currentMonth");
+    const now = new Date();
+    grid.innerHTML = "";
+    
+    monthLabel.innerText = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    
+    // Process history to get daily net and daily total
+    const dailyData = {};
+    let tempTotal = total;
+    
+    // Sort history by date descending (already is, but safe)
+    // We walk backwards from current total to find past totals
+    const sortedHistory = [...history].sort((a,b) => b.date - a.date);
+    
+    // Today's entries
+    const todayStr = now.toLocaleDateString('fr-MA');
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dateObj = new Date(now.getFullYear(), now.getMonth(), i);
+        const dateStr = dateObj.toLocaleDateString('fr-MA');
+        
+        // Find net change for this day
+        const dayEntries = history.filter(h => h.date.startsWith(dateStr));
+        const netChange = dayEntries.reduce((sum, entry) => sum + entry.val, 0);
+        
+        const dayEl = document.createElement("div");
+        dayEl.className = "cal-day";
+        if (netChange !== 0) dayEl.className += " has-activity";
+        
+        dayEl.innerHTML = `<span>${i}</span>`;
+        if (netChange !== 0) {
+            const sign = netChange > 0 ? "+" : "";
+            dayEl.innerHTML += `<div class="total-dot">${sign}${netChange}</div>`;
+            dayEl.setAttribute("data-info", `Net: ${sign}${netChange} MAD`);
+        }
+        
+        grid.appendChild(dayEl);
+    }
+}
+
 function modifySavings(type) {
     const input = document.getElementById("amountInput");
     const amount = parseFloat(input.value);
@@ -79,10 +123,10 @@ function modifySavings(type) {
     setTimeout(() => btn.classList.remove('btn-active-press'), 200);
 
     const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const dateStr = now.toLocaleDateString('fr-MA'); // Simplified for calendar matching
 
     history.unshift({ text: `${type === 'add' ? '+' : '-'} ${amount} MAD`, val: change, date: dateStr });
-    if (history.length > 15) history.pop();
+    if (history.length > 30) history.pop();
     input.value = "";
     saveData();
     updateUI();
@@ -131,7 +175,9 @@ function updateUI() {
             <button class="delete-btn" onclick="deleteTransaction(${i})">×</button>
         </li>
     `).join("");
+    
     updateChart();
+    renderCalendar();
 }
 
 function updateGoal() {
