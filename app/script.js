@@ -5,156 +5,123 @@ let lastDeleted = null;
 let savingsChart;
 
 window.onload = () => {
-    history = history.map(item => typeof item === 'string' ? { 
-        text: item, date: new Date().toLocaleDateString('fr-MA'), val: parseFloat(item.replace(/[^-0.9.]/g, '')) 
-    } : item);
+    setupSelectors();
     initChart();
     updateUI();
 };
+
+function setupSelectors() {
+    const monthSel = document.getElementById("monthSelect");
+    const yearSel = document.getElementById("yearSelect");
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    
+    months.forEach((m, i) => {
+        let opt = new Option(m, i);
+        if (i === new Date().getMonth()) opt.selected = true;
+        monthSel.add(opt);
+    });
+
+    for (let y = 2025; y <= 2034; y++) {
+        let opt = new Option(y, y);
+        if (y === new Date().getFullYear()) opt.selected = true;
+        yearSel.add(opt);
+    }
+}
 
 function initChart() {
     const ctx = document.getElementById('savingsChart').getContext('2d');
     savingsChart = new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                data: [],
-                borderColor: '#38bdf8',
-                backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointBackgroundColor: '#38bdf8'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { 
-                legend: { display: false },
-                tooltip: { enabled: true, callbacks: { label: (c) => c.parsed.y + ' MAD' } }
-            },
-            scales: {
-                x: { display: false },
-                y: { 
-                    beginAtZero: true,
-                    max: goal > 0 ? goal : undefined,
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#64748b', font: { size: 9 } }
-                }
-            }
-        }
+        data: { labels: [], datasets: [{ data: [], borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', fill: true, tension: 0.4, pointRadius: 2 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
     });
-}
-
-function updateChart() {
-    if (!savingsChart) return;
-    let runningTotal = total;
-    let chartData = [total];
-    let chartLabels = ["Now"];
-    history.forEach(item => {
-        runningTotal -= item.val;
-        chartData.unshift(runningTotal);
-        chartLabels.unshift(item.date);
-    });
-    savingsChart.data.labels = chartLabels;
-    savingsChart.data.datasets[0].data = chartData;
-    savingsChart.options.scales.y.max = goal > 0 ? goal : undefined;
-    savingsChart.update();
 }
 
 function renderCalendar() {
     const grid = document.getElementById("calendarGrid");
-    const monthLabel = document.getElementById("currentMonth");
-    const now = new Date();
+    const month = parseInt(document.getElementById("monthSelect").value);
+    const year = parseInt(document.getElementById("yearSelect").value);
     grid.innerHTML = "";
-    
-    monthLabel.innerText = now.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    
-    // Process history to get daily net and daily total
-    const dailyData = {};
-    let tempTotal = total;
-    
-    // Sort history by date descending (already is, but safe)
-    // We walk backwards from current total to find past totals
-    const sortedHistory = [...history].sort((a,b) => b.date - a.date);
-    
-    // Today's entries
-    const todayStr = now.toLocaleDateString('fr-MA');
-    
-    for (let i = 1; i <= daysInMonth; i++) {
-        const dateObj = new Date(now.getFullYear(), now.getMonth(), i);
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr = new Date().toLocaleDateString('fr-MA');
+
+    // Calculate all daily balances from the start of time
+    const dailyBalances = calculateDailyBalances();
+
+    // Padding for first day of week (Monday start)
+    const padding = firstDay === 0 ? 6 : firstDay - 1;
+    for (let p = 0; p < padding; p++) grid.appendChild(document.createElement("div"));
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateObj = new Date(year, month, d);
         const dateStr = dateObj.toLocaleDateString('fr-MA');
-        
-        // Find net change for this day
-        const dayEntries = history.filter(h => h.date.startsWith(dateStr));
-        const netChange = dayEntries.reduce((sum, entry) => sum + entry.val, 0);
-        
+        const data = dailyBalances[dateStr] || { net: 0, balance: 0 };
+
         const dayEl = document.createElement("div");
         dayEl.className = "cal-day";
-        if (netChange !== 0) dayEl.className += " has-activity";
+        if (dateStr === todayStr) dayEl.classList.add("today");
+
+        const netDisplay = data.net === 0 ? "" : `<div class="net ${data.net > 0 ? 'pos' : 'neg'}">${data.net > 0 ? '+' : ''}${data.net}</div>`;
         
-        dayEl.innerHTML = `<span>${i}</span>`;
-        if (netChange !== 0) {
-            const sign = netChange > 0 ? "+" : "";
-            dayEl.innerHTML += `<div class="total-dot">${sign}${netChange}</div>`;
-            dayEl.setAttribute("data-info", `Net: ${sign}${netChange} MAD`);
-        }
-        
+        dayEl.innerHTML = `
+            <span>${d}</span>
+            ${netDisplay}
+            <div class="day-total">${Math.round(data.balance)}</div>
+        `;
         grid.appendChild(dayEl);
     }
 }
 
-function modifySavings(type) {
-    const input = document.getElementById("amountInput");
-    const amount = parseFloat(input.value);
-    if (isNaN(amount) || amount <= 0) return;
+function calculateDailyBalances() {
+    // 1. Get all unique dates from history and sort them
+    let results = {};
+    let runningTotal = total;
+    
+    // We start from current total and go backward to reconstruct history
+    // history[0] is newest
+    let dayMap = {};
+    
+    // Group transactions by date
+    history.forEach(h => {
+        if (!dayMap[h.date]) dayMap[h.date] = 0;
+        dayMap[h.date] += h.val;
+    });
 
+    // To find the balance at any date, we subtract changes from the current total
+    // But for the calendar, we want the balance *at the end of that day*.
+    let sortedDates = Object.keys(dayMap).sort((a,b) => {
+        return new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-'));
+    });
+
+    let currentBalance = total;
+    // Map today first
+    const todayStr = new Date().toLocaleDateString('fr-MA');
+    results[todayStr] = { net: dayMap[todayStr] || 0, balance: currentBalance };
+
+    let runningBalance = currentBalance;
+    sortedDates.forEach(date => {
+        results[date] = { net: dayMap[date], balance: runningBalance };
+        runningBalance -= dayMap[date]; // Move backward in time
+    });
+
+    return results;
+}
+
+function modifySavings(type) {
+    const amount = parseFloat(document.getElementById("amountInput").value);
+    if (isNaN(amount) || amount <= 0) return;
     const change = type === 'add' ? amount : -amount;
     total += change;
-    triggerBackgroundEffect(type);
-
-    const btn = document.querySelector(`.${type}-btn`);
-    btn.classList.add('btn-active-press');
-    setTimeout(() => btn.classList.remove('btn-active-press'), 200);
-
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-MA'); // Simplified for calendar matching
-
+    
+    const dateStr = new Date().toLocaleDateString('fr-MA');
     history.unshift({ text: `${type === 'add' ? '+' : '-'} ${amount} MAD`, val: change, date: dateStr });
-    if (history.length > 30) history.pop();
-    input.value = "";
+    
+    document.getElementById("amountInput").value = "";
     saveData();
     updateUI();
-}
-
-function triggerBackgroundEffect(type) {
-    const overlay = document.getElementById("bg-overlay");
-    overlay.className = type === 'add' ? 'burst-add' : 'burst-sub';
-    setTimeout(() => overlay.className = '', 700);
-}
-
-function deleteTransaction(index) {
-    lastDeleted = { item: history[index], index: index };
-    total -= history[index].val;
-    history.splice(index, 1);
-    saveData();
-    updateUI();
-    showUndoNotification();
-}
-
-function undoDelete() {
-    if (!lastDeleted) return;
-    total += lastDeleted.item.val;
-    history.splice(lastDeleted.index, 0, lastDeleted.item);
-    lastDeleted = null;
-    hideUndoNotification();
-    saveData();
-    updateUI();
+    triggerBackgroundEffect(type);
 }
 
 function updateUI() {
@@ -166,23 +133,24 @@ function updateUI() {
     document.getElementById("progressFill").style.width = `${Math.min(percent, 100)}%`;
     document.getElementById("progressText").innerText = `${Math.round(percent)}%`;
 
-    document.getElementById("historyList").innerHTML = history.map((item, i) => `
-        <li>
-            <div class="history-item-left">
-                <span>${item.text}</span>
-                <span style="font-size: 0.7rem; color: #64748b;">${item.date}</span>
-            </div>
-            <button class="delete-btn" onclick="deleteTransaction(${i})">×</button>
-        </li>
+    document.getElementById("historyList").innerHTML = history.slice(0, 10).map((item, i) => `
+        <li><span>${item.text} (${item.date})</span><button class="delete-btn" onclick="deleteTransaction(${i})">×</button></li>
     `).join("");
     
     updateChart();
     renderCalendar();
 }
 
+function deleteTransaction(i) {
+    total -= history[i].val;
+    history.splice(i, 1);
+    saveData();
+    updateUI();
+}
+
 function updateGoal() {
-    const goalVal = parseFloat(document.getElementById("goalInput").value);
-    if (!isNaN(goalVal)) { goal = goalVal; saveData(); updateUI(); document.getElementById("goalInput").value = ""; }
+    const val = parseFloat(document.getElementById("goalInput").value);
+    if (!isNaN(val)) { goal = val; saveData(); updateUI(); }
 }
 
 function saveData() {
@@ -191,23 +159,20 @@ function saveData() {
     localStorage.setItem("savings_history", JSON.stringify(history));
 }
 
-function showUndoNotification() {
-    let el = document.getElementById("undoToast") || document.createElement("div");
-    el.id = "undoToast"; document.body.appendChild(el);
-    el.innerHTML = `Deleted. <button onclick="undoDelete()" style="background:#38bdf8;border:none;padding:5px;border-radius:5px;cursor:pointer;font-weight:bold">Undo</button>`;
-    el.className = "show";
-    setTimeout(() => { if(el.className === "show") el.className = ""; }, 5000);
+function updateChart() {
+    if (!savingsChart) return;
+    let running = total;
+    let data = [total];
+    history.slice(0, 10).forEach(h => { running -= h.val; data.unshift(running); });
+    savingsChart.data.labels = new Array(data.length).fill("");
+    savingsChart.data.datasets[0].data = data;
+    savingsChart.update();
 }
 
-function hideUndoNotification() { document.getElementById("undoToast").className = ""; }
-function clearAll() { if (confirm("Clear all?")) { localStorage.clear(); location.reload(); } }
+function triggerBackgroundEffect(type) {
+    const overlay = document.getElementById("bg-overlay");
+    overlay.className = type === 'add' ? 'burst-add' : 'burst-sub';
+    setTimeout(() => overlay.className = '', 700);
+}
 
-document.addEventListener('mousemove', (e) => {
-    const buttons = document.querySelectorAll('.add-btn, .sub-btn, .goal-btn');
-    buttons.forEach(btn => {
-        const rect = btn.getBoundingClientRect();
-        const distance = Math.sqrt(Math.pow(e.clientX - (rect.left + rect.width / 2), 2) + Math.pow(e.clientY - (rect.top + rect.height / 2), 2));
-        const intensity = Math.max(0, 1 - (distance / 200));
-        btn.style.transform = `scale(${1 + (0.1 * intensity)})`;
-    });
-});
+function clearAll() { if (confirm("Reset everything?")) { localStorage.clear(); location.reload(); } }

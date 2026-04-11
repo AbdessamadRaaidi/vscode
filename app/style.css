@@ -1,78 +1,56 @@
 :root {
-    --primary: #2563eb;
-    --success: #10b981;
-    --danger: #ef4444;
-    --bg: #0f172a;
-    --card: #1e293b;
-    --text: #f8fafc;
+    --primary: #2563eb; --success: #10b981; --danger: #ef4444;
+    --bg: #0f172a; --card: #1e293b; --text: #f8fafc;
 }
 
 body { 
-    font-family: 'Segoe UI', sans-serif; 
-    background: var(--bg); color: var(--text); 
-    display: flex; justify-content: center; align-items: center; 
-    min-height: 100vh; margin: 0; overflow-y: auto; padding: 20px 0;
+    font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); 
+    display: flex; justify-content: center; align-items: flex-start; 
+    min-height: 100vh; margin: 0; padding: 20px 0; overflow-x: hidden;
 }
 
-#bg-overlay {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    pointer-events: none; z-index: -1; opacity: 0;
-}
-
-.burst-add { background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0) 70%); animation: burstFade 0.7s ease-out; }
-.burst-sub { background: radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, rgba(15, 23, 42, 0) 70%); animation: burstFade 0.7s ease-out; }
-
+#bg-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; opacity: 0; }
+.burst-add { background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%); animation: burstFade 0.7s; }
+.burst-sub { background: radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 70%); animation: burstFade 0.7s; }
 @keyframes burstFade { 0% { opacity: 0; transform: scale(0.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.4); } }
 
-.app-card { 
-    background: var(--card); padding: 2rem; border-radius: 24px; 
-    width: 360px; border: 1px solid rgba(255, 255, 255, 0.1); 
-    position: relative; z-index: 10;
-}
+.app-card { background: var(--card); padding: 1.5rem; border-radius: 24px; width: 380px; border: 1px solid rgba(255, 255, 255, 0.1); }
 
-h1 { margin: 0; font-size: 1.5rem; text-align: center; }
-.total-display { text-align: center; margin: 1rem 0; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 15px; }
-.total-display h2 { font-size: 2.2rem; margin: 0; color: #38bdf8; }
+h1 { margin: 0; font-size: 1.2rem; text-align: center; }
+.total-display { text-align: center; margin: 1rem 0; background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 15px; }
+.total-display h2 { font-size: 2rem; margin: 0; color: #38bdf8; }
 
-.chart-container { height: 120px; margin: 10px 0; padding: 10px; background: rgba(255, 255, 255, 0.02); border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.05); }
+.chart-container { height: 100px; margin-bottom: 15px; }
 
 /* CALENDAR STYLES */
-.calendar-container { margin: 15px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; }
-.calendar-header h3 { font-size: 0.9rem; margin: 0 0 10px 0; color: #94a3b8; text-transform: capitalize; }
-.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.calendar-container { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 15px; margin-bottom: 15px; }
+.calendar-nav { display: flex; gap: 5px; margin-bottom: 10px; }
+.calendar-nav select { background: #0f172a; color: white; border: 1px solid #334155; padding: 5px; border-radius: 5px; flex: 1; font-size: 0.8rem; }
+.calendar-days-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.6rem; color: #64748b; margin-bottom: 5px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+
 .cal-day { 
-    aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-size: 0.7rem; background: rgba(255,255,255,0.05); border-radius: 6px; position: relative; cursor: default;
+    aspect-ratio: 1/1.1; background: rgba(255,255,255,0.03); border-radius: 4px; 
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 3px; font-size: 0.65rem; border: 1px solid transparent;
 }
-.cal-day.has-activity { background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.3); }
-.cal-day .total-dot { font-size: 0.5rem; color: #38bdf8; font-weight: bold; overflow: hidden; width: 100%; text-align: center; }
-.cal-day:hover::after {
-    content: attr(data-info); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
-    background: #0f172a; color: white; padding: 5px; border-radius: 5px; font-size: 0.6rem;
-    white-space: pre; z-index: 100; border: 1px solid #38bdf8; width: 80px; text-align: center;
-}
+.cal-day.today { border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
+.cal-day span { font-weight: bold; opacity: 0.6; } /* Day number */
+.cal-day .net { font-size: 0.5rem; font-weight: bold; } /* +/- amount */
+.cal-day .net.pos { color: var(--success); }
+.cal-day .net.neg { color: var(--danger); }
+.cal-day .day-total { font-size: 0.55rem; color: #38bdf8; border-top: 1px solid rgba(255,255,255,0.1); width: 100%; text-align: center; padding-top: 1px; }
 
-.progress-bar-bg { background: #334155; height: 12px; border-radius: 10px; overflow: hidden; }
+/* REUSED APP STYLES */
+.progress-bar-bg { background: #334155; height: 8px; border-radius: 10px; overflow: hidden; }
 .progress-fill { background: linear-gradient(90deg, #38bdf8, #2563eb); height: 100%; width: 0%; transition: 0.5s; }
-.progress-labels { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 8px; color: #94a3b8; }
-
-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; box-sizing: border-box; }
-.btn-group { display: flex; gap: 15px; margin-top: 15px; }
-.add-btn, .sub-btn { flex: 1; min-height: 50px; font-size: 1rem; border-radius: 12px; cursor: pointer; border: none; color: white; font-weight: bold; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.add-btn { background: var(--success); }
-.sub-btn { background: var(--danger); }
-
-.settings-area { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.05); }
-.goal-input-group { display: flex; gap: 10px; align-items: center; }
-.goal-input-group input { margin-bottom: 0; flex: 2; }
-.goal-btn { flex: 1; background: #475569; border: none; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: all 0.3s ease; }
-
-.btn-active-press { animation: kick 0.15s ease-out; }
-@keyframes kick { 0% { transform: scale(1); } 50% { transform: scale(0.92); } 100% { transform: scale(1.08); } }
-
-ul { list-style: none; padding: 0; max-height: 120px; overflow-y: auto; font-size: 0.85rem; }
-li { padding: 8px 0; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-.delete-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.1rem; transition: 0.2s; }
-
-#undoToast { visibility: hidden; min-width: 250px; background-color: #334155; color: #fff; text-align: center; border-radius: 12px; padding: 16px; position: fixed; z-index: 100; left: 50%; bottom: 30px; transform: translateX(-50%); box-shadow: 0 10px 15px rgba(0,0,0,0.4); }
-#undoToast.show { visibility: visible; animation: fadein 0.5s; }
+.progress-labels { display: flex; justify-content: space-between; font-size: 0.7rem; margin: 5px 0; color: #94a3b8; }
+input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 8px; }
+.btn-group { display: flex; gap: 10px; }
+.add-btn, .sub-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.add-btn { background: var(--success); } .sub-btn { background: var(--danger); }
+.goal-btn { background: #475569; border: none; color: white; padding: 10px; border-radius: 8px; cursor: pointer; }
+.history { margin-top: 15px; }
+ul { list-style: none; padding: 0; max-height: 80px; overflow-y: auto; font-size: 0.8rem; }
+li { padding: 5px 0; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; }
+.clear-btn { width: 100%; background: none; border: 1px solid var(--danger); color: var(--danger); padding: 5px; margin-top: 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; }
