@@ -363,10 +363,15 @@ function renderCalendar() {
             colorClass = delta >= 0 ? ' has-add' : ' has-sub';
         }
 
-        let snapHtml = '', deltaHtml = '';
+        let snapHtml = '', deltaHtml = '', pctHtml = '';
         if (snap !== undefined) {
             const cls = snap > 0 ? 'pos' : snap < 0 ? 'neg' : 'zero';
             snapHtml = `<div class="cal-snap ${cls}">${Math.round(snap).toLocaleString()}</div>`;
+            if (goal > 0) {
+                const pct = Math.min((snap / goal) * 100, 100);
+                const pctCls = pct >= 100 ? 'pct-done' : pct >= 50 ? 'pct-mid' : 'pct-low';
+                pctHtml = `<div class="cal-pct ${pctCls}">${Math.round(pct)}%</div>`;
+            }
         }
         if (delta !== undefined) {
             const cls  = delta >= 0 ? 'delta-pos' : 'delta-neg';
@@ -376,7 +381,7 @@ function renderCalendar() {
 
         html += `<div class="cal-cell${isToday ? ' today' : ''}${colorClass}" onclick="onCalCellClick('${iso}', this)" title="${iso}">
             <div class="cal-num">${d}</div>
-            ${snapHtml}${deltaHtml}
+            ${snapHtml}${pctHtml}${deltaHtml}
         </div>`;
     }
 

@@ -379,6 +379,16 @@ body {
 .cal-delta.delta-pos { color: #6ee7b7; }
 .cal-delta.delta-neg { color: #fca5a5; }
 
+.cal-pct {
+    font-size: 0.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+}
+.cal-pct.pct-low  { color: #94a3b8; }
+.cal-pct.pct-mid  { color: #fbbf24; }
+.cal-pct.pct-done { color: #34d399; }
+
 /* RIGHT PANEL */
 .panel-right { background: var(--panel); }
 
