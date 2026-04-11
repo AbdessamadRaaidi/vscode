@@ -1,239 +1,153 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subway Surfers Ultimate</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        canvas { display: block; }
-        
-        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; color: white; }
-        #score-panel { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); text-align: center; }
-        #score-val { font-size: 40px; font-weight: 900; text-shadow: 0 0 10px #00cfff, 3px 3px 0 #000; }
-        
-        #stats-left { position: absolute; top: 20px; left: 20px; }
-        .stat-box { background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; margin-bottom: 10px; border: 1px solid #444; }
-        
-        #overlay { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            display: flex; align-items: center; justify-content: center; 
-            background: rgba(0,0,0,0.8); pointer-events: all; z-index: 100; 
-        }
-        .box { 
-            background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 40px; 
-            border-radius: 20px; text-align: center; border: 3px solid #00cfff;
-            box-shadow: 0 0 50px rgba(0, 207, 255, 0.3);
-        }
-        .btn { 
-            padding: 15px 40px; font-size: 20px; font-weight: bold; border: none; 
-            border-radius: 10px; cursor: pointer; background: #00cfff; color: #000;
-            transition: 0.2s; margin-top: 20px;
-        }
-        .btn:hover { transform: scale(1.1); background: #0080ff; }
-        #hint { margin-top: 20px; font-size: 12px; color: #888; }
-    </style>
+<meta charset="UTF-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:Arial,sans-serif}
+canvas{display:block}
+#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+#score-panel{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center}
+#score-val{font-size:32px;font-weight:bold;color:#fff;text-shadow:0 0 10px #00cfff,2px 2px 0 #000}
+#stats-left{position:absolute;top:10px;left:10px}
+.badge{padding:4px 10px;background:rgba(0,0,0,0.6);color:#fff;border-radius:15px;margin-bottom:5px;border:1px solid #444}
+#overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);pointer-events:all}
+.box{background:linear-gradient(135deg,#1a0a3a,#0a1a3a);border:2px solid #00cfff;border-radius:16px;padding:30px;text-align:center;color:#fff}
+.btn{padding:12px 30px;background:#00cfff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;margin-top:15px}
+</style>
 </head>
 <body>
-
 <canvas id="c"></canvas>
 <div id="ui">
     <div id="score-panel">
         <div id="score-val">0</div>
-        <div style="color: #ffd700;">🪙 <span id="coin-val">0</span></div>
+        <div style="color:#FFD700">🪙 <span id="coins">0</span></div>
     </div>
     <div id="stats-left">
-        <div class="stat-box">HP: <span id="hp-val">❤️❤️❤️</span></div>
-        <div class="stat-box" id="mode-tag" style="display:none; color:#a0f">◈ AUTOPILOT ◈</div>
+        <div class="badge" id="hp">❤️ ❤️ ❤️</div>
+        <div class="badge" id="ap-badge" style="display:none;color:#a0f">AUTOPILOT</div>
+    </div>
+    <div id="overlay">
+        <div class="box">
+            <h1>SUBWAY SURFERS</h1>
+            <p>ULTIMATE BROWSER EDITION</p>
+            <button class="btn" id="play-btn">START RUN</button>
+        </div>
     </div>
 </div>
-
-<div id="overlay">
-    <div class="box">
-        <h1 style="font-size: 48px; margin-bottom: 10px;">SUBWAY SURFERS</h1>
-        <p style="color: #aaa;">Browser Edition v2.0</p>
-        <button class="btn" id="start-btn">START RUN</button>
-        <div id="hint">Lanes: ← → | Jump: SPACE | Autopilot: A | God Mode: G</div>
-    </div>
-</div>
-
 <script>
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-let W, H;
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+let W = canvas.width = window.innerWidth, H = canvas.height = window.innerHeight;
+window.onresize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; };
 
-// Game State
-const G = {
-    alive: false,
-    score: 0,
-    coins: 0,
-    hp: 3,
-    lane: 0,       // -1, 0, 1
-    targetLane: 0,
-    x: 0,          // Current visual x
-    y: 0,          // Current visual y (jump)
-    vy: 0,
-    wz: 0,         // World distance
-    speed: 15,
-    obstacles: [],
-    nextObs: 0.5,
-    autopilot: false,
-    god: false,
-    invincibility: 0
+let G = {
+    lane: 0, targetLane: 0, x: 0, y: 0, vy: 0, 
+    speed: 15, wz: 0, score: 0, coins: 0, hp: 3,
+    alive: false, invt: 0, autopilot: false,
+    obs: [], particles: [], decor: [], nextObs: 0.5
 };
 
-function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
 function worldToScreen(wx, wy, wz) {
-    const horizon = H * 0.4;
-    const perspective = 1 / (wz + 1);
-    const sx = W / 2 + (wx * W * 0.5) * perspective;
-    const sy = horizon + (H - horizon) * (1 - perspective) - (wy * H * 0.5) * perspective;
-    return { x: sx, y: sy, scale: perspective };
+    let p = 1 / (wz + 1);
+    return { x: W/2 + (wx * W * 0.7) * p, y: (H*0.4) + (H*0.6) * (1-p) - (wy * H * 0.6) * p, s: p };
 }
 
-function spawnObstacle() {
-    const lane = Math.floor(Math.random() * 3) - 1;
-    const type = Math.random() > 0.5 ? 'train' : 'barrier';
-    G.obstacles.push({ lane, type, wz: G.wz + 2 });
+function spawn() {
+    let l = Math.floor(Math.random()*3)-1;
+    let type = Math.random() > 0.6 ? 'train' : 'barrier';
+    G.obs.push({ lane: l, wz: G.wz + 3, type });
 }
 
 function update(dt) {
     if (!G.alive) return;
-
     G.wz += G.speed * dt * 0.1;
     G.score += Math.floor(G.speed * dt);
-    
-    // Lane interpolation
     G.x += (G.targetLane - G.x) * 12 * dt;
+    if (G.y > 0 || G.vy !== 0) { G.vy -= 50 * dt; G.y += G.vy * dt; if (G.y < 0) { G.y = 0; G.vy = 0; } }
 
-    // Jump Gravity
-    if (G.y > 0 || G.vy !== 0) {
-        G.vy -= 50 * dt;
-        G.y += G.vy * dt;
-        if (G.y < 0) { G.y = 0; G.vy = 0; }
-    }
+    if (G.wz > G.nextObs) { spawn(); G.nextObs = G.wz + 0.4 + Math.random()*0.5; }
 
-    // Spawning
-    if (G.wz > G.nextObs) {
-        spawnObstacle();
-        G.nextObs = G.wz + 0.4 + Math.random() * 0.6;
-    }
-
-    // Collision
-    G.obstacles = G.obstacles.filter(o => {
-        const dist = o.wz - G.wz;
-        if (dist < 0.1 && dist > -0.1 && Math.abs(o.lane - G.targetLane) < 0.1) {
-            if (!G.god && G.invincibility <= 0) {
-                G.hp--;
-                G.invincibility = 1.5;
-                if (G.hp <= 0) G.alive = false;
-            }
+    G.obs = G.obs.filter(o => {
+        let dz = o.wz - G.wz;
+        if (dz < 0.1 && dz > -0.1 && Math.abs(o.lane - G.targetLane) < 0.2) {
+            if (G.y < 0.2 && G.invt <= 0) { G.hp--; G.invt = 1.5; if (G.hp <= 0) G.alive = false; }
         }
-        return dist > -0.2;
+        return dz > -0.5;
     });
 
-    if (G.invincibility > 0) G.invincibility -= dt;
-
-    // Autopilot AI
     if (G.autopilot) {
-        const danger = G.obstacles.find(o => o.wz - G.wz < 0.5 && o.wz - G.wz > 0);
-        if (danger && danger.lane === G.targetLane) {
-            G.targetLane = (G.targetLane === 1) ? 0 : (G.targetLane === -1) ? 0 : 1;
-        }
+        let n = G.obs.find(o => o.wz - G.wz < 0.6 && o.wz - G.wz > 0);
+        if (n && n.lane === G.targetLane) G.targetLane = G.targetLane === 1 ? 0 : G.targetLane === -1 ? 0 : 1;
     }
 
-    // UI
+    if (G.invt > 0) G.invt -= dt;
+    G.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.l -= dt; });
+    G.particles = G.particles.filter(p => p.l > 0);
+    
     document.getElementById('score-val').innerText = G.score;
-    document.getElementById('hp-val').innerText = "❤️".repeat(Math.max(0, G.hp));
-    if (!G.alive) document.getElementById('overlay').style.display = 'flex';
+    document.getElementById('coins').innerText = G.coins;
+    document.getElementById('hp').innerText = "❤️ ".repeat(Math.max(0, G.hp));
 }
 
 function draw() {
-    // Clear and Sky
-    ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(0, 0, W, H);
+    // Background & Rails
+    let g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#050510'); g.addColorStop(0.4,'#1a1a3e');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#0a0a1a'; ctx.fillRect(0,H*0.4,W,H*0.6);
 
-    // Ground
-    ctx.fillStyle = '#16213e';
-    ctx.beginPath();
-    ctx.moveTo(0, H * 0.4); ctx.lineTo(W, H * 0.4);
-    ctx.lineTo(W, H); ctx.lineTo(0, H);
-    ctx.fill();
-
-    // Lanes / Rails
-    ctx.strokeStyle = '#0f3460';
-    ctx.lineWidth = 2;
-    [-0.5, 0.5].forEach(lx => {
-        const p1 = worldToScreen(lx, 0, 0);
-        const p2 = worldToScreen(lx, 0, 10);
+    // Track Rails
+    ctx.strokeStyle = '#240046'; ctx.lineWidth = 3;
+    [-0.6, -0.2, 0.2, 0.6].forEach(rx => {
+        let p1 = worldToScreen(rx, 0, 0), p2 = worldToScreen(rx, 0, 5);
         ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
     });
 
-    // Draw Obstacles
-    G.obstacles.forEach(o => {
-        const pos = worldToScreen(o.lane * 0.5, 0, o.wz - G.wz);
-        if (pos.scale <= 0) return;
-        
-        ctx.fillStyle = o.type === 'train' ? '#e94560' : '#ffd700';
-        const w = 120 * pos.scale;
-        const h = o.type === 'train' ? 180 * pos.scale : 40 * pos.scale;
-        ctx.fillRect(pos.x - w/2, pos.y - h, w, h);
+    // Environment Decor (Buildings)
+    for(let i=0; i<12; i++) {
+        let bz = (i * 1.8) - (G.wz % 1.8);
+        [-1.8, 1.8].forEach(sx => {
+            let p = worldToScreen(sx, 0, bz);
+            ctx.fillStyle = '#0f0f2d'; ctx.fillRect(p.x - (300*p.s), p.y - (800*p.s), 600*p.s, 800*p.s);
+        });
+    }
+
+    // Obstacles
+    G.obs.forEach(o => {
+        let p = worldToScreen(o.lane * 0.45, 0, o.wz - G.wz);
+        ctx.fillStyle = o.type === 'train' ? '#2244aa' : '#ffcc00';
+        let w = 150 * p.s, h = (o.type === 'train' ? 200 : 50) * p.s;
+        ctx.fillRect(p.x - w/2, p.y - h, w, h);
+        ctx.strokeStyle = '#fff'; ctx.strokeRect(p.x - w/2, p.y - h, w, h);
     });
 
-    // Draw Player
-    if (G.invincibility > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
-    const pPos = worldToScreen(G.x * 0.5, G.y, 0.1);
-    ctx.fillStyle = '#00cfff';
-    const pw = 60 * pPos.scale;
-    const ph = 100 * pPos.scale;
-    ctx.fillRect(pPos.x - pw/2, pPos.y - ph, pw, ph);
-    // Glow
-    ctx.shadowBlur = 15; ctx.shadowColor = '#00cfff';
-    ctx.strokeStyle = 'white'; ctx.strokeRect(pPos.x - pw/2, pPos.y - ph, pw, ph);
-    ctx.shadowBlur = 0;
-}
-
-let lastTime = 0;
-function loop(t) {
-    const dt = (t - lastTime) / 1000;
-    lastTime = t;
-    if (dt < 0.1) { // Prevent massive spikes
-        update(dt);
-        draw();
+    // Player Model
+    if (!(G.invt > 0 && Math.floor(Date.now()/100)%2)) {
+        let p = worldToScreen(G.x * 0.45, G.y, 0.15);
+        ctx.fillStyle = '#00cfff'; ctx.shadowBlur = 15; ctx.shadowColor = '#00cfff';
+        ctx.fillRect(p.x - 25, p.y - 70, 50, 70); ctx.shadowBlur = 0;
+        // Head
+        ctx.fillStyle = '#fff'; ctx.fillRect(p.x - 15, p.y - 90, 30, 25);
     }
-    requestAnimationFrame(loop);
 }
 
-document.getElementById('start-btn').onclick = () => {
-    G.alive = true;
-    G.hp = 3;
-    G.score = 0;
-    G.wz = 0;
-    G.obstacles = [];
+let last = 0;
+function loop(t) {
+    let dt = Math.min(0.1, (t - last) / 1000); last = t;
+    update(dt); draw(); requestAnimationFrame(loop);
+}
+
+document.getElementById('play-btn').onclick = () => {
+    G.alive = true; G.hp = 3; G.score = 0; G.wz = 0; G.obs = [];
     document.getElementById('overlay').style.display = 'none';
 };
 
-window.addEventListener('keydown', e => {
+window.onkeydown = e => {
     if (e.key === 'ArrowLeft') G.targetLane = Math.max(-1, G.targetLane - 1);
     if (e.key === 'ArrowRight') G.targetLane = Math.min(1, G.targetLane + 1);
-    if ((e.key === ' ' || e.key === 'ArrowUp') && G.y === 0) G.vy = 18;
-    if (e.key === 'a') {
-        G.autopilot = !G.autopilot;
-        document.getElementById('mode-tag').style.display = G.autopilot ? 'block' : 'none';
-    }
-    if (e.key === 'g') G.god = !G.god;
-});
-
-// Start the loop
+    if ((e.key === 'ArrowUp' || e.key === ' ') && G.y === 0) G.vy = 22;
+    if (e.key === 'a') { G.autopilot = !G.autopilot; document.getElementById('ap-badge').style.display = G.autopilot ? 'block' : 'none'; }
+};
 requestAnimationFrame(loop);
 </script>
-
 </body>
 </html>
