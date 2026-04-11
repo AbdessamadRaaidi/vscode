@@ -23,6 +23,15 @@ window.onload = () => {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
+// Get local date as YYYY-MM-DD (avoids UTC timezone shift from toISOString)
+function localISO(date) {
+    const d = date || new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 function getISOFromItem(item) {
     if (item.isoDate) return item.isoDate;
     if (item.date) {
@@ -34,12 +43,12 @@ function getISOFromItem(item) {
             return `${year}-${month}-${day}`;
         }
     }
-    return new Date().toISOString().slice(0, 10);
+    return localISO();
 }
 
 // Build { isoDate -> netDelta } and { isoDate -> balanceSnapshot } for all history
 function buildDayMaps() {
-    const todayISO = new Date().toISOString().slice(0, 10);
+    const todayISO = localISO();
     const dayDeltas = {};
     history.forEach(item => {
         const iso = getISOFromItem(item);
@@ -51,6 +60,8 @@ function buildDayMaps() {
     const snapshots = {};
     let suffixSum = 0;
     for (let i = allDates.length - 1; i >= 0; i--) {
+        // snapshot(d) = total - sum of deltas strictly after d
+        // suffixSum currently holds sum of deltas for days AFTER allDates[i]
         snapshots[allDates[i]] = total - suffixSum;
         suffixSum += dayDeltas[allDates[i]];
     }
@@ -68,13 +79,19 @@ function buildDayMaps() {
     return { dayDeltas, snapshots, allDates };
 }
 
-// Enumerate all days between two ISO strings (inclusive)
+// Enumerate all days between two ISO strings (inclusive), using local time
 function dayRange(fromISO, toISO) {
     const days = [];
-    const cur = new Date(fromISO);
-    const end = new Date(toISO);
+    // Parse as local midnight by splitting manually
+    const [fy, fm, fd] = fromISO.split('-').map(Number);
+    const [ty, tm, td] = toISO.split('-').map(Number);
+    const cur = new Date(fy, fm - 1, fd);
+    const end = new Date(ty, tm - 1, td);
     while (cur <= end) {
-        days.push(cur.toISOString().slice(0, 10));
+        const y = cur.getFullYear();
+        const m = String(cur.getMonth() + 1).padStart(2, '0');
+        const d = String(cur.getDate()).padStart(2, '0');
+        days.push(`${y}-${m}-${d}`);
         cur.setDate(cur.getDate() + 1);
     }
     return days;
@@ -145,7 +162,7 @@ function initChart() {
 function updateChart() {
     if (!savingsChart) return;
 
-    const todayISO = new Date().toISOString().slice(0, 10);
+    const todayISO = localISO();
     const { snapshots, allDates } = buildDayMaps();
 
     // Always show all time: from earliest transaction to today
@@ -197,7 +214,7 @@ function modifySavings(type) {
 
     const nowDate = new Date();
     const dateStr = nowDate.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const isoDate = nowDate.toISOString().slice(0, 10);
+    const isoDate = localISO(nowDate);
 
     history.unshift({ text: `${type === 'add' ? '+' : '-'} ${amount} MAD`, val: change, date: dateStr, isoDate });
     if (history.length > 200) history.pop();
@@ -302,7 +319,7 @@ function renderCalendar() {
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     document.getElementById('calTitle').textContent = `${monthNames[calMonth]} ${calYear}`;
 
-    const todayISO = new Date().toISOString().slice(0, 10);
+    const todayISO = localISO();
     const { dayDeltas, snapshots } = buildDayMaps();
 
     const firstDow   = new Date(calYear, calMonth, 1).getDay();
