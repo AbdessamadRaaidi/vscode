@@ -71,48 +71,46 @@ function renderCalendar() {
     const now = new Date();
     const todayStr = now.toLocaleDateString('fr-MA');
 
-    const dayMap = {};
+    // Create a map of NET changes per day
+    const dayNetMap = {};
     history.forEach(h => {
-        if (!dayMap[h.date]) dayMap[h.date] = 0;
-        dayMap[h.date] += h.val;
+        if (!dayNetMap[h.date]) dayNetMap[h.date] = 0;
+        dayNetMap[h.date] += h.val;
     });
 
-    const dailyBalances = {};
-    let simTotal = total;
-    dailyBalances[todayStr] = simTotal;
-    
-    let sortedHistory = [...history].sort((a,b) => new Date(b.date.split('/').reverse().join('-')) - new Date(a.date.split('/').reverse().join('-')));
-    sortedHistory.forEach(h => {
-        simTotal -= h.val;
-        dailyBalances[h.date] = simTotal + h.val;
-    });
-
+    // To get the balance for ANY day, we start from the current total and walk backward
     const padding = firstDay === 0 ? 6 : firstDay - 1;
     for (let p = 0; p < padding; p++) grid.appendChild(document.createElement("div"));
 
     for (let d = 1; d <= daysInMonth; d++) {
         const dateObj = new Date(year, month, d);
         const dateStr = dateObj.toLocaleDateString('fr-MA');
-        const net = dayMap[dateStr] || 0;
         
         let displayBalance = "";
+        let netHtml = "";
+
         if (dateObj <= now) {
-            let balanceFound = 0;
-            let checkDate = new Date(dateObj);
-            while(checkDate >= new Date(2025,0,1)) {
-                let dStr = checkDate.toLocaleDateString('fr-MA');
-                if (dailyBalances[dStr] !== undefined) {
-                    balanceFound = dailyBalances[dStr];
-                    break;
+            // Calculate balance at the END of this specific day
+            let balAtDate = total;
+            // Subtract all transactions that happened AFTER this date
+            history.forEach(h => {
+                const hDateParts = h.date.split('/');
+                const hDateObj = new Date(hDateParts[2], hDateParts[1] - 1, hDateParts[0]);
+                if (hDateObj > dateObj) {
+                    balAtDate -= h.val;
                 }
-                checkDate.setDate(checkDate.getDate() - 1);
+            });
+            displayBalance = Math.round(balAtDate);
+
+            // Add the net change indicator (+/-) if something happened today
+            const net = dayNetMap[dateStr] || 0;
+            if (net !== 0) {
+                netHtml = `<div class="net ${net > 0 ? 'pos' : 'neg'}">${net > 0 ? '+' : ''}${net}</div>`;
             }
-            displayBalance = Math.round(balanceFound);
         }
 
         const dayEl = document.createElement("div");
         dayEl.className = "cal-day" + (dateStr === todayStr ? " today" : "");
-        const netHtml = net !== 0 ? `<div class="net ${net > 0 ? 'pos' : 'neg'}">${net > 0 ? '+' : ''}${net}</div>` : "";
         dayEl.innerHTML = `<span>${d}</span>${netHtml}<div class="day-total">${displayBalance}</div>`;
         grid.appendChild(dayEl);
     }
