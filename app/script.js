@@ -31,7 +31,16 @@ function initChart() {
         options: { 
             responsive: true, maintainAspectRatio: false, 
             plugins: { legend: { display: false } }, 
-            scales: { x: { display: false }, y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } } } 
+            scales: { 
+                x: { display: false }, 
+                y: { 
+                    display: true, 
+                    beginAtZero: true,
+                    max: goal > 0 ? goal : undefined, 
+                    grid: { color: 'rgba(255,255,255,0.05)' }, 
+                    ticks: { color: '#64748b', font: { size: 9 } } 
+                } 
+            } 
         }
     });
 }
@@ -59,7 +68,8 @@ function renderCalendar() {
 
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const todayStr = new Date().toLocaleDateString('fr-MA');
+    const now = new Date();
+    const todayStr = now.toLocaleDateString('fr-MA');
 
     const dayMap = {};
     history.forEach(h => {
@@ -67,16 +77,14 @@ function renderCalendar() {
         dayMap[h.date] += h.val;
     });
 
-    // Reconstruct balances for the month
     const dailyBalances = {};
     let simTotal = total;
     dailyBalances[todayStr] = simTotal;
     
-    // Sort history by date descending to walk backward
     let sortedHistory = [...history].sort((a,b) => new Date(b.date.split('/').reverse().join('-')) - new Date(a.date.split('/').reverse().join('-')));
     sortedHistory.forEach(h => {
         simTotal -= h.val;
-        dailyBalances[h.date] = simTotal + h.val; // Balance at END of that day
+        dailyBalances[h.date] = simTotal + h.val;
     });
 
     const padding = firstDay === 0 ? 6 : firstDay - 1;
@@ -87,22 +95,25 @@ function renderCalendar() {
         const dateStr = dateObj.toLocaleDateString('fr-MA');
         const net = dayMap[dateStr] || 0;
         
-        // FIND PREVIOUS BALANCE logic: find last day with activity before or on this day
-        let displayBalance = 0;
-        let checkDate = new Date(dateObj);
-        while(checkDate >= new Date(2025,0,1)) {
-            let dStr = checkDate.toLocaleDateString('fr-MA');
-            if (dailyBalances[dStr] !== undefined) {
-                displayBalance = dailyBalances[dStr];
-                break;
+        let displayBalance = "";
+        if (dateObj <= now) {
+            let balanceFound = 0;
+            let checkDate = new Date(dateObj);
+            while(checkDate >= new Date(2025,0,1)) {
+                let dStr = checkDate.toLocaleDateString('fr-MA');
+                if (dailyBalances[dStr] !== undefined) {
+                    balanceFound = dailyBalances[dStr];
+                    break;
+                }
+                checkDate.setDate(checkDate.getDate() - 1);
             }
-            checkDate.setDate(checkDate.getDate() - 1);
+            displayBalance = Math.round(balanceFound);
         }
 
         const dayEl = document.createElement("div");
         dayEl.className = "cal-day" + (dateStr === todayStr ? " today" : "");
         const netHtml = net !== 0 ? `<div class="net ${net > 0 ? 'pos' : 'neg'}">${net > 0 ? '+' : ''}${net}</div>` : "";
-        dayEl.innerHTML = `<span>${d}</span>${netHtml}<div class="day-total">${Math.round(displayBalance)}</div>`;
+        dayEl.innerHTML = `<span>${d}</span>${netHtml}<div class="day-total">${displayBalance}</div>`;
         grid.appendChild(dayEl);
     }
 }
@@ -163,7 +174,12 @@ function updateUI() {
 
 function updateGoal() {
     const val = parseFloat(document.getElementById("goalInput").value);
-    if (!isNaN(val)) { goal = val; saveData(); updateUI(); }
+    if (!isNaN(val)) { 
+        goal = val; 
+        if(savingsChart) savingsChart.options.scales.y.max = goal;
+        saveData(); 
+        updateUI(); 
+    }
 }
 
 function saveData() {
@@ -178,4 +194,4 @@ function triggerBackgroundEffect(type) {
     setTimeout(() => overlay.className = '', 700);
 }
 
-function clearAll() { if (confirm("Reset?")) { localStorage.clear(); location.reload(); } }
+function clearAll() { if (confirm("Reset everything?")) { localStorage.clear(); location.reload(); } }

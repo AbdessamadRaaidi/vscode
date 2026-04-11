@@ -41,10 +41,15 @@ h1 { margin: 0; font-size: 1.2rem; text-align: center; }
 .progress-labels { display: flex; justify-content: space-between; font-size: 0.75rem; margin: 8px 0; color: #94a3b8; }
 
 input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; box-sizing: border-box; }
+
+/* FIXED BUTTON ALIGNMENT */
+.goal-input-group { display: flex; gap: 8px; align-items: center; width: 100%; }
+.goal-input-group input { margin-bottom: 0; flex: 3; }
+.goal-btn { flex: 1; white-space: nowrap; background: #475569; border: none; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
 .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
 .add-btn, .sub-btn { flex: 1; padding: 14px; border-radius: 10px; border: none; color: white; font-weight: bold; cursor: pointer; }
 .add-btn { background: var(--success); } .sub-btn { background: var(--danger); }
-.goal-btn { background: #475569; border: none; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
 
 ul { list-style: none; padding: 0; max-height: 100px; overflow-y: auto; }
 li { padding: 8px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; font-size: 0.85rem; }
