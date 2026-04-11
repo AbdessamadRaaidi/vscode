@@ -48,14 +48,23 @@ function buildDayMaps() {
         const iso = getISOFromItem(item);
         dayDeltas[iso] = (dayDeltas[iso] || 0) + item.val;
     });
-    // snapshot(d) = total - sum of all vals on dates AFTER d
+    // snapshot(d) = balance at end of day d
+    // Walk dates descending, subtracting deltas from total as we go back in time
     const allDates = Object.keys(dayDeltas).sort();
     const snapshots = {};
-    allDates.forEach(d => {
-        let snap = total;
-        allDates.forEach(d2 => { if (d2 > d) snap -= dayDeltas[d2]; });
-        snapshots[d] = snap;
-    });
+    let suffixSum = 0;
+    for (let i = allDates.length - 1; i >= 0; i--) {
+        snapshots[allDates[i]] = total - suffixSum;
+        suffixSum += dayDeltas[allDates[i]];
+    }
+    if (snapshots[todayISO] === undefined && total !== 0) {
+        // Today has no transaction; find the most recent snapshot to carry forward
+        let latest = null;
+        for (let i = allDates.length - 1; i >= 0; i--) {
+            if (allDates[i] <= todayISO) { latest = snapshots[allDates[i]]; break; }
+        }
+        if (latest !== null) snapshots[todayISO] = latest;
+    }
     if (total !== 0 && snapshots[todayISO] === undefined) {
         snapshots[todayISO] = total;
     }
@@ -162,23 +171,30 @@ function updateChart() {
     const labels = [];
     const data   = [];
 
+    // Build a sorted list of [isoDate, snapshotValue] pairs for efficient forward-fill
+    const sortedSnaps = allDates
+        .filter(d => snapshots[d] !== undefined)
+        .map(d => [d, snapshots[d]]);
+
+    let snapIdx = 0; // pointer into sortedSnaps
+    let lastSnap = null;
+
     days.forEach(d => {
         // Format label: DD/MM
         const dt = new Date(d + 'T00:00:00');
         labels.push(dt.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' }));
 
+        // Advance pointer to consume all snapshots on or before this day
+        while (snapIdx < sortedSnaps.length && sortedSnaps[snapIdx][0] <= d) {
+            lastSnap = sortedSnaps[snapIdx][1];
+            snapIdx++;
+        }
+
+        // Use exact snapshot if this day has one, otherwise forward-fill
         if (snapshots[d] !== undefined) {
             data.push(snapshots[d]);
         } else {
-            // Interpolate: find the closest previous snapshot
-            let snap = null;
-            for (let i = allDates.length - 1; i >= 0; i--) {
-                if (allDates[i] <= d && snapshots[allDates[i]] !== undefined) {
-                    snap = snapshots[allDates[i]];
-                    break;
-                }
-            }
-            data.push(snap); // null if no prior data → gap
+            data.push(lastSnap); // null if no prior transaction at all → gap
         }
     });
 
